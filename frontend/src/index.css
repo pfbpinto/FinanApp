@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Move the first toast only 80px down */
+#toast-container .toast:first-of-type {
+  margin-top: 80px !important; /* Move the first toast 80px down */
+}
+
+/* Adjust the positioning of the toast container */
+#toast-container {
+  top: 80px !important; /* Move the whole container down by 80px */
+}

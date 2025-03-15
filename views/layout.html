@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home</title>
+    <link href="../assets/css/output.css" rel="stylesheet" />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .toast-custom-position {
+        position: fixed;
+        top: 100px;
+        right: 10px;
+        z-index: 9999;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100">
+    <nav class="bg-blue-600 p-4">
+      <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+        <div class="relative flex items-center justify-between h-16">
+          <div class="absolute inset-y-0 left-0 flex items-center sm:hidden">
+            <button
+              type="button"
+              class="inline-flex items-center justify-center p-2 rounded-md text-white hover:text-gray-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-800 focus:ring-white"
+            >
+              <span class="sr-only">Open main menu</span>
+            </button>
+          </div>
+          <div
+            class="flex items-center justify-center sm:items-stretch sm:justify-start"
+          >
+            <div class="flex-shrink-0 text-white font-bold">FinanApp</div>
+          </div>
+          <div class="ml-10 space-x-4">
+            <a href="/" class="text-white hover:text-gray-300">Home</a>
+            {{if .Authenticated}}
+            <a href="/user" class="text-white">Dashboard</a>
+            <a href="/logout" class="text-white">Logout</a>
+            <span class="text-white">{{.User}}</span>
+            {{else}}
+            <a href="/login" class="text-white">Login</a>
+            {{end}}
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container mx-auto my-8 p-4">{{template "content" .}}</main>
+
+    <!-- Toastr JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script type="text/javascript">
+      toastr.options = {
+        closeButton: true,
+        progressBar: true,
+        timeOut: "5000",
+        positionClass: "toast-custom-position",
+      };
+    </script>
+    {{if .ErrorMessage}}
+    <script type="text/javascript">
+      toastr.error("{{.ErrorMessage}}");
+    </script>
+    {{end}} {{if .SuccessMessage}}
+    <script type="text/javascript">
+      toastr.success("{{.SuccessMessage}}");
+    </script>
+    {{end}}
+  </body>
+</html>

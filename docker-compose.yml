@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  # PostgreSQL container
+  postgres:
+    image: postgres:latest
+    container_name: finanapp-postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=Fpadminpostgre
+      - POSTGRES_DB=finanapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Volume para persistência de dados
+
+  # Redis container
+  redis:
+    image: redis:latest
+    container_name: finanapp-redis
+    ports:
+      - "6379:6379"
+
+  # NSQ containers
+  nsqlookupd:
+    image: nsqio/nsq
+    container_name: finanapp-nsqlookupd
+    command: /nsqlookupd
+    ports:
+      - "4160:4160"
+      - "4161:4161"
+
+  nsqd:
+    image: nsqio/nsq
+    container_name: finanapp-nsqd
+    command: /nsqd --broadcast-address=nsqd --lookupd-tcp-address=nsqlookupd:4160
+    depends_on:
+      - nsqlookupd
+    ports:
+      - "4150:4150"
+      - "4151:4151"
+
+  nsqadmin:
+    image: nsqio/nsq
+    container_name: finanapp-nsqadmin
+    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
+    depends_on:
+      - nsqlookupd
+    ports:
+      - "4171:4171"
+
+# Volumes para persistência de dados
+volumes:
+  postgres_data:

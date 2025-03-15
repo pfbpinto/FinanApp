@@ -1,0 +1,67 @@
+{{define "content"}}
+<div class="max-w-md mx-auto p-6 mt-10 bg-white rounded-lg shadow-lg">
+  <h1 class="text-2xl font-bold text-center text-blue-600 mb-6">Login</h1>
+  <form action="/login" method="POST">
+    <!-- Email Input -->
+    <div class="mb-4">
+      <label for="email" class="block text-sm font-medium text-gray-700"
+        >Email</label
+      >
+      <input
+        type="email"
+        id="email"
+        name="email"
+        class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+        required
+      />
+    </div>
+
+    <!-- Password Input with Toggle -->
+    <div class="mb-6 relative">
+      <label for="password" class="block text-sm font-medium text-gray-700"
+        >Password</label
+      >
+      <div class="relative">
+        <input
+          type="password"
+          id="password"
+          name="password"
+          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 pr-12"
+          required
+        />
+        <button
+          type="button"
+          id="togglePassword"
+          class="absolute inset-y-0 right-2 flex items-center text-gray-500 hover:text-gray-700 focus:outline-none"
+          style="left: 90%"
+        >
+          <i class="fas fa-eye" id="toggleIcon"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <button
+      type="submit"
+      class="w-full py-2 px-4 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700"
+    >
+      Login
+    </button>
+  </form>
+
+  <!-- Links for Register and Forgot Password -->
+  <div class="mt-4 text-center">
+    <br />
+    <a href="/register" class="text-blue-600 hover:underline">Register</a>
+    <span class="text-gray-400 mx-2">|</span>
+    <a href="/forgot-password" class="text-blue-600 hover:underline"
+      >Forgot Password</a
+    >
+  </div>
+</div>
+<script src="/assets/js/password-toggle.js"></script>
+<script>
+  // Inicializa a funcionalidade de toggle para o formulário
+  togglePasswordVisibility("password", "togglePassword", "toggleIcon");
+</script>
+{{end}}
