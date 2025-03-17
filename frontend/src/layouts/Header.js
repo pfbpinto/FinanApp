@@ -14,21 +14,20 @@ const Header = () => {
     try {
       const response = await fetch("/api/logout", {
         method: "POST",
-        credentials: "include", // Envia cookies com a requisição
+        credentials: "include",
       });
 
       if (response.ok) {
-        // Atualiza o estado de autenticação
         setIsLoggedIn(false);
         setUser(null);
         navigate("/login");
-        toastr.success("Logout realizado com sucesso!");
+        toastr.success("You are logged out!");
       } else {
-        throw new Error("Falha no logout");
+        throw new Error("Error trying to logout");
       }
     } catch (error) {
-      console.error("Erro ao realizar logout:", error);
-      toastr.error("Ocorreu um erro ao realizar o logout. Tente novamente.");
+      console.error("Error trying to logout:", error);
+      toastr.error("Error trying to logout.");
     }
   };
 

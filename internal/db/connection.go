@@ -2,18 +2,18 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"finanapp/config"
 	"fmt"
 	"log"
 	"os"
 
+	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 // DB will be the global instance of the database connection
-var DB *gorm.DB
+var DB *sql.DB
 
 var RDB *redis.Client
 
@@ -26,16 +26,22 @@ func InitDB() {
 	}
 
 	// Connect to the database
-	DB, err = gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
+	DB, err = sql.Open("postgres", cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("Error connecting to the database: %v", err)
 	}
 
-	fmt.Println("Connected to the PostgreSQL database")
+	// Test the connection
+	err = DB.Ping()
+	if err != nil {
+		log.Fatalf("Error testing the database connection: %v", err)
+	}
+
+	fmt.Println("Connected to the PostgreSQL database successfully")
 }
 
 // GetDB returns the database instance
-func GetDB() *gorm.DB {
+func GetDB() *sql.DB {
 	// Checks if the connection has been initialized; if not, calls InitDB
 	if DB == nil {
 		InitDB()
@@ -71,17 +77,4 @@ func InitRedis() {
 	}
 
 	fmt.Println("Connected to Redis successfully")
-}
-
-// EnsureDatabaseExists ensures that migrations and seeds are applied.
-func EnsureDatabaseExists(db *gorm.DB) {
-	log.Println("Ensuring database is up-to-date...")
-
-	// Run migrations to ensure the database schema is up-to-date
-	RunMigrations(db)
-
-	// Run seeds to populate the database with initial data
-	SeedDatabase(db)
-
-	log.Println("Database setup completed successfully.")
 }

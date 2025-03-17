@@ -1,150 +1,34 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
-	"finanapp/internal/auth"
 	"finanapp/internal/db"
 	"finanapp/internal/models"
 	"finanapp/internal/utils"
+	"log"
 	"net/http"
 	"time"
-
-	"gorm.io/gorm"
 )
 
-// UserDashboard shows the logged-in user's dashboard
-func UserDashboard(w http.ResponseWriter, r *http.Request) {
-	// Get the user session cookie value (JWT token)
-	cookie, err := r.Cookie("user_session")
-	if err != nil || cookie.Value == "" {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	// Validate the JWT token
-	claims, err := auth.ValidateJWT(cookie.Value)
-	if err != nil {
-		http.Error(w, "Failed to validate token", http.StatusUnauthorized)
-		return
-	}
-
-	// Extract email from claims
-	email, ok := claims["email"].(string)
-	if !ok {
-		http.Error(w, "Invalid token data", http.StatusUnauthorized)
-		return
-	}
-
-	// Check if user data is cached in Redis
-	ctx := context.Background()
-	cachedUser, err := db.RDB.Get(ctx, email).Result()
-	if err == nil && cachedUser != "" {
-		// User is found in Redis; render using cached data
-		data := map[string]interface{}{
-			"User": email,
-			"Name": cachedUser,
-		}
-		RenderTemplate(w, r, "user.html", data)
-		return
-	}
-
-	// If not in Redis, load the user from the database
-	var user models.User
-	result := db.DB.Where("email_address = ?", email).First(&user)
-	if result.Error != nil {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	// Cache the user data in Redis for future requests
-	err = db.RDB.Set(ctx, email, user.FirstName, 15*time.Minute).Err()
-	if err != nil {
-		// Log or handle the Redis cache error (optional)
-	}
-
-	// Render the template
-	data := map[string]interface{}{
-		"User": email,
-		"Name": user.FirstName,
-	}
-	RenderTemplate(w, r, "user.html", data)
-}
-
 // UserDashboardReact shows the logged-in user's dashboard
-func UserDashboardReact(w http.ResponseWriter, r *http.Request) {
+func UserDashboard(w http.ResponseWriter, r *http.Request) {
+	log.Println("UserDashboard: Request received.")
+
 	// Retrieve user from context
-	user, ok := r.Context().Value("user").(models.User)
+	user, ok := r.Context().Value("user").(models.UserProfile)
 	if !ok {
+		log.Println("UserDashboard: Unauthorized access - no user found in context.")
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
 		return
 	}
 
-	var userAsset []models.UserAsset
-	var assetTypes []models.AssetType
-	var userIncome []models.UserIncome
-	var userExpense []models.UserExpenditure
-	var taxes []models.Tax
-	var userGroups []models.UserGroup
-
-	// Query for user assets data with AssetType and UserAssetTax preload
-	if result := db.DB.Preload("AssetType").
-		Preload("UserAssetTaxes.Tax"). // Preload Tax relationship inside UserAssetTax
-		Where("user_id = ?", user.ID).
-		Find(&userAsset); result.Error != nil && result.Error != gorm.ErrRecordNotFound {
-		http.Error(w, "Failed to retrieve user assets data", http.StatusInternalServerError)
-		return
-	}
-
-	// Fetch all asset types from the database
-	if result := db.DB.Find(&assetTypes); result.Error != nil {
-		http.Error(w, "Failed to retrieve asset types data", http.StatusInternalServerError)
-		return
-	}
-
-	// Query for user income data with IncomeType preload
-	if result := db.DB.
-		Preload("IncomeType").
-		Preload("UserTaxes"). // Primeiro preenche UserTaxes
-		Where("user_id = ?", user.ID).
-		Find(&userIncome); result.Error != nil && result.Error != gorm.ErrRecordNotFound {
-		http.Error(w, "Failed to retrieve user income data", http.StatusInternalServerError)
-		return
-	}
-
-	// Agora carrega os impostos de cada UserTax individualmente
-	for i := range userIncome {
-		db.DB.Preload("Tax").Find(&userIncome[i].UserTaxes)
-	}
-
-	// Query for user expenditure data with Expenditure preload
-	if result := db.DB.Preload("Expenditure").Where("user_id = ?", user.ID).Find(&userExpense); result.Error != nil && result.Error != gorm.ErrRecordNotFound {
-		http.Error(w, "Failed to retrieve user expenditure data", http.StatusInternalServerError)
-		return
-	}
-
-	// Query for Taxes data with TaxType preload
-	if result := db.DB.Preload("TaxType").Find(&taxes); result.Error != nil && result.Error != gorm.ErrRecordNotFound {
-		http.Error(w, "Failed to retrieve Taxes data", http.StatusInternalServerError)
-		return
-	}
-
-	// Fetch User Group from the database
-	if result := db.DB.Find(&userGroups); result.Error != nil {
-		http.Error(w, "Failed to retrieve Group data", http.StatusInternalServerError)
-		return
-	}
+	log.Printf("UserDashboard: User retrieved from context - ID: %d, Name: %s %s, Email: %s",
+		user.UserProfileID, user.FirstName, user.LastName, user.EmailAddress)
 
 	// Prepare response data
 	responseData := map[string]interface{}{
-		"user":        user,
-		"userAsset":   userAsset,
-		"assetTypes":  assetTypes,
-		"userIncome":  userIncome,
-		"userExpense": userExpense,
-		"taxes":       taxes,
-		"userGroups":  userGroups,
+		"user": user,
 	}
 
 	// Set the response header to indicate JSON response
@@ -152,9 +36,12 @@ func UserDashboardReact(w http.ResponseWriter, r *http.Request) {
 
 	// Return the response data as JSON
 	if err := json.NewEncoder(w).Encode(responseData); err != nil {
+		log.Printf("UserDashboard: Error encoding response data: %v", err)
 		http.Error(w, "Failed to encode response data", http.StatusInternalServerError)
 		return
 	}
+
+	log.Println("UserDashboard: Response sent successfully.")
 }
 
 func UserUpdate(w http.ResponseWriter, r *http.Request) {
@@ -222,9 +109,15 @@ func UserUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fetch the user to be updated
-	var user models.User
-	if result := db.DB.First(&user, requestData.UserId); result.Error != nil {
+	// Fetch the user profile to be updated
+	var userProfile models.UserProfile
+	err = db.DB.QueryRow(`
+		SELECT user_profile_id, first_name, last_name, email_address, user_password, date_of_birth
+		FROM user_profile WHERE user_profile_id = $1`, requestData.UserId).Scan(
+		&userProfile.UserProfileID, &userProfile.FirstName, &userProfile.LastName,
+		&userProfile.EmailAddress, &userProfile.UserPassword, &userProfile.DateOfBirth)
+
+	if err != nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
@@ -236,21 +129,21 @@ func UserUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Prepare update data
-	updateData := map[string]interface{}{
-		"FirstName":   utils.Capitalize(requestData.FirstName),
-		"LastName":    utils.Capitalize(requestData.LastName),
-		"DataOfBirth": &parsedDob,
-	}
+	// Update the user profile in the database
+	_, err = db.DB.Exec(`
+		UPDATE user_profile
+		SET first_name = $1, last_name = $2, date_of_birth = $3, updated_at = CURRENT_TIMESTAMP
+		WHERE user_profile_id = $4`,
+		utils.Capitalize(requestData.FirstName),
+		utils.Capitalize(requestData.LastName),
+		parsedDob,
+		requestData.UserId,
+	)
 
-	// Update the user
-	if result := db.DB.Model(&user).Updates(updateData); result.Error != nil {
+	if err != nil {
 		http.Error(w, "Error updating user", http.StatusInternalServerError)
 		return
 	}
-
-	// For now, let's simulate a successful update
-	//fmt.Printf("Received data: %+v\n", requestData)
 
 	// Send a success response
 	w.Header().Set("Content-Type", "application/json")

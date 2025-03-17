@@ -138,7 +138,7 @@ func CreateStoredProcedures(db *gorm.DB) error {
 			LastName VARCHAR(255),
 			EmailAddress VARCHAR(255),
 			Password VARCHAR(255),
-			DataOfBirth VARCHAR(255)  -- Date as string
+			DateOfBirth VARCHAR(255)  -- Date as string
 		)
 		RETURNS JSONB AS $$  -- Return JSONB instead of a string
 		BEGIN
@@ -160,20 +160,27 @@ func CreateStoredProcedures(db *gorm.DB) error {
 			END IF;
 
 			-- Check if the email already exists in the system
-			IF EXISTS (SELECT 1 FROM "user" WHERE email_address = EmailAddress) THEN
+			IF EXISTS (SELECT 1 FROM "userprofile" WHERE emailaddress = EmailAddress) THEN
 				RETURN jsonb_build_object('status', 'error', 'message', 'A user with this email already exists.');
 			END IF;
 
 			-- Insert the user into the database
-			INSERT INTO "user" (first_name, last_name, user_type_id, email_address, password, data_of_birth, created_at, updated_at)
+			INSERT INTO "userprofile" (
+				firstname,
+				lastname,
+				emailaddress,
+				userpassword,
+				dateofbirth,
+				usersubscription,
+				createdat
+			)
 			VALUES (
 				FirstName,
 				LastName,
-				2,  -- Assuming 2 is the default user_type_id
 				EmailAddress,
-				Password,
-				TO_DATE(DataOfBirth, 'YYYY-MM-DD'),  -- Convert DataOfBirth from string to date
-				CURRENT_TIMESTAMP,
+				Password,  -- Consider hashing the password before inserting
+				TO_DATE(DateOfBirth, 'YYYY-MM-DD'),  -- Convert DateOfBirth from string to date
+				FALSE,  -- Assuming user_subscription defaults to FALSE
 				CURRENT_TIMESTAMP
 			);
 
@@ -188,15 +195,16 @@ func CreateStoredProcedures(db *gorm.DB) error {
 			LastName VARCHAR(255),
 			EmailAddress VARCHAR(255),
 			Password VARCHAR(255),
-			DataOfBirth VARCHAR(255)
+			DateOfBirth VARCHAR(255)
 		)
 		RETURNS TEXT AS $$  -- Retorna um texto com a mensagem de erro ou sucesso
 		BEGIN
-			-- Validation
-			IF NOT EXISTS (SELECT 1 FROM "user" WHERE id = UserID) THEN
+			-- Validation: Check if the user exists
+			IF NOT EXISTS (SELECT 1 FROM "userprofile" WHERE userprofileid = UserID) THEN
 				RETURN 'User not found.';
 			END IF;
 
+			-- Validation: Check mandatory fields
 			IF FirstName IS NULL OR LENGTH(FirstName) = 0 THEN
 				RETURN 'First Name is mandatory.';
 			END IF;
@@ -206,19 +214,31 @@ func CreateStoredProcedures(db *gorm.DB) error {
 			END IF;
 
 			-- Check if email is different and exists
-			IF EmailAddress IS NOT NULL AND EmailAddress <> (SELECT email_address FROM "user" WHERE id = UserID) THEN
+			IF EmailAddress IS NOT NULL AND EmailAddress <> (SELECT emailaddress FROM "userprofile" WHERE userprofileid = UserID) THEN
+				-- Optional: if you want to allow email change, remove this check
 				RETURN 'Email address cannot be updated.';
 			END IF;
 
-			IF EXISTS (SELECT 1 FROM "user" WHERE email_address = EmailAddress AND id <> UserID) THEN
+			IF EXISTS (SELECT 1 FROM "userprofile" WHERE emailaddress = EmailAddress AND userprofileid <> UserID) THEN
 				RETURN 'A user with this email already exists.';
 			END IF;
 
-			-- Update user information
-			UPDATE "user"
-			SET first_name = FirstName, last_name = LastName, 
-				data_of_birth = DataOfBirth, updated_at = CURRENT_TIMESTAMP
-			WHERE id = UserID;
+			-- If Password is provided, hash it (consider hashing before this step in actual code)
+			IF Password IS NOT NULL AND LENGTH(Password) > 0 THEN
+				-- Consider using a utility to hash the password securely
+				Password := Password;  -- This should be hashed in practice, not just stored as-is
+			END IF;
+
+			-- Update user information in the database
+			UPDATE "userprofile"
+			SET 
+				firstname = FirstName,
+				lastname = LastName,
+				emailaddress = EmailAddress,
+				userpassword = Password,  -- Password should be hashed if necessary
+				dateofbirth = TO_DATE(DateOfBirth, 'YYYY-MM-DD'),  -- Convert DateOfBirth from string to date
+				updatedat = CURRENT_TIMESTAMP
+			WHERE userprofileid = UserID;
 
 			RETURN 'User successfully updated';  -- Success message
 		END;

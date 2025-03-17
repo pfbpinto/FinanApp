@@ -9,6 +9,9 @@ import User from "./pages/User";
 import UserEdit from "./pages/UserPage/Edit";
 import Register from "./pages/Register";
 import NotFoundPage from "./pages/NotFoundPage";
+import UserIncome from "./pages/UserPage/Income";
+import UserExpense from "./pages/UserPage/Expense";
+import UserAsset from "./pages/UserPage/Asset";
 
 function App() {
   return (
@@ -21,8 +24,11 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/home" element={<Home />} />
             <Route path="/user" element={<User />} />
-            <Route path="/UserPage/Edit/:userId" element={<UserEdit />} />
+            <Route path="/user-page/edit/:userId" element={<UserEdit />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/user-income" element={<UserIncome />} />
+            <Route path="/user-expense" element={<UserExpense />} />
+            <Route path="/user-asset" element={<UserAsset />} />
             {/* Rota para página 404 */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
