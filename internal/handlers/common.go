@@ -18,7 +18,7 @@ func RenderTemplate(w http.ResponseWriter, r *http.Request, templateName string,
 	}
 
 	if val := r.Context().Value("user"); val != nil {
-		user = val.(models.User).EmailAddress
+		user = val.(models.UserProfile).EmailAddress
 	}
 
 	// Add authentication data to the data map

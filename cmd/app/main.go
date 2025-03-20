@@ -76,6 +76,9 @@ func main() {
 	http.Handle("/api/user-edit", corsMiddleware.Handler(http.HandlerFunc(
 		middlewares.AuthMiddleware(handlers.UserUpdate))))
 
+	http.Handle("/api/user-income-forecast", corsMiddleware.Handler(http.HandlerFunc(
+		middlewares.AuthMiddleware(handlers.UserIncomeForecast))))
+
 	// Start the server
 	log.Printf("Server running on port %s", cfg.Port)
 	err = http.ListenAndServe(":"+cfg.Port, nil)

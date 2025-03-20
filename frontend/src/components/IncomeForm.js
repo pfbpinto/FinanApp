@@ -1,27 +1,26 @@
 import React, { useEffect, useState } from "react";
-import { useAuth } from "../components/AuthContext";
 
-function IncomeForm({ onSubmit, income, onClose }) {
-  const [formData, setFormData] = useState(income || { UserTaxes: [] });
+function IncomeForm({ onSubmit, income, userCategory, onClose }) {
+  const [formData, setFormData] = useState(
+    income || {
+      user_financial_forecast_name: "",
+      user_financial_forecast_amount: "",
+      entity_type_id: "",
+      user_financial_forecast_begin_date: "",
+    }
+  );
+
   const [incomeTypes, setIncomeTypes] = useState([]);
-  const [taxes, setTaxes] = useState([]);
-  const { isLoggedIn } = useAuth();
 
   useEffect(() => {
-    if (isLoggedIn) {
-      fetch("/api/income-type", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          setIncomeTypes(data.incomeTypes || []);
-          setTaxes(data.taxes || []);
-        })
-        .catch((error) => console.error("Error fetching data:", error));
+    setIncomeTypes(userCategory);
+  }, [userCategory]);
+
+  useEffect(() => {
+    if (income) {
+      setFormData(income);
     }
-  }, [isLoggedIn]);
+  }, [income]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -29,30 +28,6 @@ function IncomeForm({ onSubmit, income, onClose }) {
       ...prevData,
       [name]: type === "checkbox" ? checked : value,
     }));
-  };
-
-  console.log(income);
-
-  const handleTaxChange = (e, tax) => {
-    const { checked } = e.target;
-
-    setFormData((prevData) => {
-      const updatedTaxes = checked
-        ? [
-            ...(prevData.UserTaxes || []),
-            {
-              TaxID: tax.ID,
-              TaxName: tax.TaxName,
-              TaxPercentage: tax.TaxPercentage,
-            },
-          ]
-        : (prevData.UserTaxes || []).filter((t) => t.TaxID !== tax.ID);
-
-      return {
-        ...prevData,
-        UserTaxes: updatedTaxes,
-      };
-    });
   };
 
   const handleSubmit = (e) => {
@@ -63,23 +38,12 @@ function IncomeForm({ onSubmit, income, onClose }) {
   const handleTypeChange = (event) => {
     const value = event.target.value;
 
-    if (value === "") {
-      // Se o valor for vazio, limpe o campo de IncomeType
-      setFormData((prevData) => ({
-        ...prevData,
-        IncomeType: null, // Ou um valor padrão
-      }));
-    } else {
-      // Caso contrário, atualize o valor de IncomeType com o ID selecionado
-      setFormData((prevData) => ({
-        ...prevData,
-        IncomeType: { ID: value },
-        IncomeTypeID: value,
-      }));
-    }
+    setFormData((prevData) => ({
+      ...prevData,
+      income_type_id: value || null, // Se vazio, define como null
+    }));
   };
 
-  console.log(formData);
   return (
     <form onSubmit={handleSubmit}>
       <div className="mb-4">
@@ -89,8 +53,8 @@ function IncomeForm({ onSubmit, income, onClose }) {
         <input
           required
           type="text"
-          name="IncomeName"
-          value={formData.IncomeName || ""}
+          name="user_financial_forecast_name"
+          value={formData.user_financial_forecast_name || ""}
           onChange={handleChange}
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
@@ -103,8 +67,8 @@ function IncomeForm({ onSubmit, income, onClose }) {
         <input
           required
           type="number"
-          name="IncomeValue"
-          value={formData.IncomeValue || ""}
+          name="user_financial_forecast_amount"
+          value={formData.user_financial_forecast_amount || ""}
           onChange={handleChange}
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
@@ -116,15 +80,17 @@ function IncomeForm({ onSubmit, income, onClose }) {
         </label>
         <select
           required
-          name="IncomeType"
-          value={formData?.IncomeType?.ID ? String(formData.IncomeType.ID) : ""}
+          name="income_type_id"
+          value={
+            formData?.income_type_id ? String(formData.income_type_id) : ""
+          }
           onChange={handleTypeChange}
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         >
-          <option value="">Select Income Type</option>
+          <option value="">Select Income Category</option>
           {incomeTypes?.map((type) => (
-            <option key={type.ID} value={type.ID}>
-              {type.IncomeTypeName}
+            <option key={type.user_category_id} value={type.user_category_id}>
+              {type.user_category_name}
             </option>
           ))}
         </select>
@@ -132,85 +98,22 @@ function IncomeForm({ onSubmit, income, onClose }) {
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700">
-          Recurrence
-        </label>
-        <input
-          required
-          type="text"
-          name="IncomeRecurrence"
-          value={formData.IncomeRecurrence || ""}
-          onChange={handleChange}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-      </div>
-
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">
-          Start Date
+          Begin Date
         </label>
         <input
           type="date"
-          name="IncomeStartDate"
+          name="user_financial_forecast_begin_date"
           value={
-            formData.IncomeStartDate
-              ? new Date(formData.IncomeStartDate).toISOString().split("T")[0]
+            formData.user_financial_forecast_begin_date
+              ? new Date(formData.user_financial_forecast_begin_date)
+                  .toISOString()
+                  .split("T")[0]
               : ""
           }
           onChange={handleChange}
           className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
           required
         />
-      </div>
-
-      <div className="mb-4">
-        <div className="mt-1 border border-gray-300 rounded-md p-2">
-          <input
-            type="checkbox"
-            name="SharedIncome"
-            checked={formData.SharedIncome || false}
-            onChange={handleChange}
-            className="mr-2"
-          />
-          <label>Shared Income</label>
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">
-          Owning Percentage
-        </label>
-        <input
-          required
-          type="number"
-          name="OwningPercentage"
-          value={formData.OwningPercentage || ""}
-          onChange={handleChange}
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-      </div>
-
-      {/* Taxes Checkbox */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">
-          Taxes (Optional)
-        </label>
-        <div className="mt-1 border border-gray-300 rounded-md p-2">
-          {taxes?.map((tax) => (
-            <div key={tax.ID} className="flex items-center mb-1">
-              <input
-                type="checkbox"
-                checked={
-                  formData.UserTaxes?.some((t) => t.TaxID === tax.ID) || false
-                }
-                onChange={(e) => handleTaxChange(e, tax)}
-                className="mr-2"
-              />
-              <label>
-                {tax.TaxName} ({tax.TaxPercentage}%)
-              </label>
-            </div>
-          ))}
-        </div>
       </div>
 
       <div className="flex justify-end">

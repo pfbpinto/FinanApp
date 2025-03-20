@@ -112,15 +112,92 @@ function User() {
             </div>
           </div>
 
-          {/* Outra Div */}
+          {/* Side div */}
           <div className="w-full md:w-1/2 bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Additional Info
-            </h3>
-            <p className="text-gray-600">
-              Aqui você pode adicionar mais informações sobre o usuário,
-              estatísticas ou qualquer outra seção relevante.
-            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="relative w-full max-w-md bg-white p-6 rounded-lg shadow-md border-2 border-gray-900 text-center mx-auto">
+                <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-white px-4 text-gray-900 font-bold text-lg uppercase tracking-wide">
+                  Incomes
+                </span>
+                <div className="flex flex-col items-center justify-center gap-3 mt-6">
+                  <div className="flex flex-wrap gap-2 w-full justify-center">
+                    <Link
+                      to="/user-income-forecast"
+                      state={{ userID: currentUser }}
+                      className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition text-center"
+                    >
+                      Forecast
+                    </Link>
+                    <Link
+                      to="/user-income-actuals"
+                      className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition text-center"
+                    >
+                      Actuals
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative w-full max-w-md bg-white p-6 rounded-lg shadow-md border-2 border-gray-900 text-center mx-auto">
+                <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-white px-4 text-gray-900 font-bold text-lg uppercase tracking-wide">
+                  Assets
+                </span>
+                <div className="flex flex-col items-center justify-center gap-3 mt-6">
+                  <div className="flex flex-wrap gap-2 w-full justify-center">
+                    <Link
+                      to="/user-asset-forecast"
+                      className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition text-center"
+                    >
+                      Forecast
+                    </Link>
+                    <Link
+                      to="/user-asset-actuals"
+                      className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition text-center"
+                    >
+                      Actuals
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative w-full max-w-md bg-white p-6 rounded-lg shadow-md border-2 border-gray-900 text-center mx-auto">
+                <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-white px-4 text-gray-900 font-bold text-lg uppercase tracking-wide">
+                  Expenses
+                </span>
+                <div className="flex flex-col items-center justify-center gap-3 mt-6">
+                  <div className="flex flex-wrap gap-2 w-full justify-center">
+                    <Link
+                      to="/user-expense-forecast"
+                      className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition text-center"
+                    >
+                      Forecast
+                    </Link>
+                    <Link
+                      to="/user-expense-actuals"
+                      className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition text-center"
+                    >
+                      Actuals
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative w-full max-w-md bg-white p-6 rounded-lg shadow-md border-2 border-gray-900 text-center mx-auto">
+                <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-white px-4 text-gray-900 font-bold text-lg uppercase tracking-wide">
+                  Groups
+                </span>
+                <div className="flex flex-col items-center justify-center gap-3 mt-6">
+                  <div className="flex flex-wrap gap-2 w-full justify-center">
+                    <button
+                      onClick={() => openGroupModal()}
+                      className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition text-center"
+                    >
+                      Manage Groups
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       ) : (
@@ -137,31 +214,6 @@ function User() {
           >
             Setup Taxes
           </button>
-          <button
-            className="px-4 py-2 mb-3 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 transition"
-            onClick={() => openGroupModal()}
-          >
-            Setup Groups
-          </button>
-
-          <Link
-            to={`/user-income`}
-            className="px-4 py-2 mb-3 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition"
-          >
-            Incomes
-          </Link>
-          <Link
-            to={`/user-expense`}
-            className="px-4 py-2 mb-3 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition"
-          >
-            Expenses
-          </Link>
-          <Link
-            to={`/user-asset`}
-            className="px-4 py-2 mb-3 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition"
-          >
-            Assets
-          </Link>
         </div>
       </div>
 
