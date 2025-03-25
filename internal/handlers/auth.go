@@ -190,7 +190,7 @@ func RegisterReact(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Declarar e para instancear variavel a ser enviada na Procedure que retorna a resposta: NOTA TODO: essa struct vai ser igual para todas stored procedures, mover ela para um arquivo de configuração ou modelos
-		var response string
+		var response string // Resposta do Procedure
 		err = db.DB.QueryRow("CALL CreateUser($1, $2, $3, $4, $5, $6)",
 			requestData.FirstName,
 			requestData.LastName,
@@ -206,12 +206,9 @@ func RegisterReact(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Mensagem da stored procedure:", response)
 
 		// Criar uma struct para receber a resposta e mensagem da Procedure - NOTA TODO: essa struct vai ser igual para todas stored procedures, mover ela para um arquivo de configuração ou modelos
-		type Response struct {
-			Status  string `json:"status"`
-			Message string `json:"message"`
-		}
+
 		// Definindo a struct da responsas para para mapear o JSON de response
-		var resp Response
+		var resp models.Response
 		err = json.Unmarshal([]byte(response), &resp)
 		if err != nil {
 			http.Error(w, "Erro ao processar resposta JSON", http.StatusInternalServerError)
