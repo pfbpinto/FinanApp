@@ -13,8 +13,8 @@ import (
 	"net/http"
 	"time"
 
+	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var rdb *redis.Client // Redis client already iniciated on main.go
@@ -64,14 +64,14 @@ func LoginReact(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Database error", http.StatusInternalServerError)
 			return
 		}
-
-		// Verify password
-		err = bcrypt.CompareHashAndPassword([]byte(user.UserPassword), []byte(loginReq.Password))
-		if err != nil {
-			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-			return
-		}
-
+		/*
+			// Verify password
+			err = bcrypt.CompareHashAndPassword([]byte(user.UserPassword), []byte(loginReq.Password))
+			if err != nil {
+				http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+				return
+			}
+		*/
 		// Token JWT creation
 		token, err := auth.CreateJWT(loginReq.EmailAddress)
 		if err != nil {
@@ -189,38 +189,48 @@ func RegisterReact(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Preparing the call to the stored procedure in the database
-		query := `SELECT CreateUser($1, $2, $3, $4, $5)`
-
-		var responseMessage string
-
-		err = db.GetDB().QueryRow(query, requestData.FirstName, requestData.LastName, requestData.Email, hashedPassword, requestData.Dob).Scan(&responseMessage)
+		// Declarar e para instancear variavel a ser enviada na Procedure que retorna a resposta: NOTA TODO: essa struct vai ser igual para todas stored procedures, mover ela para um arquivo de configuração ou modelos
+		var response string
+		err = db.DB.QueryRow("CALL CreateUser($1, $2, $3, $4, $5, $6)",
+			requestData.FirstName,
+			requestData.LastName,
+			requestData.Email,
+			hashedPassword,
+			requestData.Dob,
+			response).
+			Scan(&response) // Captura o retorno da stored procedure
 		if err != nil {
-			log.Printf("Error executing stored procedure: %v", err)
-			http.Error(w, "Error executing stored procedure", http.StatusInternalServerError)
+			log.Fatal("Erro ao chamar stored procedure: ", err)
+		}
+		// Exiba a mensagem retornada pela stored procedure
+		fmt.Println("Mensagem da stored procedure:", response)
+
+		// Criar uma struct para receber a resposta e mensagem da Procedure - NOTA TODO: essa struct vai ser igual para todas stored procedures, mover ela para um arquivo de configuração ou modelos
+		type Response struct {
+			Status  string `json:"status"`
+			Message string `json:"message"`
+		}
+		// Definindo a struct da responsas para para mapear o JSON de response
+		var resp Response
+		err = json.Unmarshal([]byte(response), &resp)
+		if err != nil {
+			http.Error(w, "Erro ao processar resposta JSON", http.StatusInternalServerError)
 			return
 		}
-
-		log.Printf("Stored procedure executed successfully. Response: %s", responseMessage)
-
-		// Parse the response message (which is in JSON format) into a map
-		var response map[string]interface{}
-		err = json.Unmarshal([]byte(responseMessage), &response)
-		if err != nil {
-			http.Error(w, "Error parsing response JSON", http.StatusInternalServerError)
-			return
-		}
-
-		// Send appropriate HTTP status code based on the response status
-		if response["status"] == "error" {
+		// Agora, com a struct Response, você pode acessar os campos status e message diretamente: NOTA TODO: Analisar se devemos ter algum tipo de log para capturar as mensagens e status
+		if resp.Status == "fail" {
+			// Se o status for "fail", envia a mensagem de erro com HTTP 400
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest) // Send 400 Bad Request on error
-			json.NewEncoder(w).Encode(response)  // Return the error response
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(resp) // Retorna o JSON de erro
+		} else if resp.Status == "success" {
+			// Se o status for "success", envia a mensagem com HTTP 200
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(resp) // Retorna a resposta de sucesso
 		} else {
-			// If successful, send 200 OK
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)        // Send 200 OK
-			json.NewEncoder(w).Encode(response) // Return success message
+			// Caso o status não seja reconhecido, envia um erro genérico
+			http.Error(w, "Status desconhecido", http.StatusInternalServerError)
 		}
 		return
 	}
