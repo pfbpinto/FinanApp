@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../components/AuthContext";
 import { Link } from "react-router-dom";
 import IncomeForm from "../../components/IncomeForm";
+import IncomePage from "../UserPage/IncomeItem";
 import CategoryForm from "../../components/CategoryForm";
 import Modal from "../../components/Modal";
 import ModalLarge from "../../components/ModalLarge";
@@ -12,16 +13,26 @@ import { ChevronUpIcon } from "@heroicons/react/24/solid";
 
 const UserIncome = () => {
   const { isLoggedIn, loading } = useAuth();
-  const [userDashboard, setUserDashboard] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
+  const { state } = useLocation();
+  const currentUser = state?.userID || null;
+  const [userFinancialItem, setUserFinancialItem] = useState(null);
+
+  const [userUserCagegory, setUserUserCagegory] = useState(null);
+  const [userIncomeTypes, setUserIncomeTypes] = useState(null);
+  const [currency, setCurrency] = useState(null);
+  const [recurrency, setRecurrency] = useState(null);
+
   const [isModalIncomeOpen, setIsModalIncomeOpen] = useState(false);
+  const [isModalIncomePageOpen, setIsModalIncomePageOpen] = useState(false);
+
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isModalCategoryOpen, setisModalCategoryOpen] = useState(false);
+
   const [deleteType, setDeleteType] = useState("");
   const [itemToDelete, setItemToDelete] = useState(null);
   const [currentIncome, setcurrentIncome] = useState(null);
   const [currentCategory, setCurrentCategory] = useState(null);
-  const [openToggleIncome, setopenToggleIncome] = useState(true);
+  const [openToggleIncome, setOpenToggleIncome] = useState(true);
 
   const navigate = useNavigate();
 
@@ -32,29 +43,32 @@ const UserIncome = () => {
   }, [isLoggedIn, loading, navigate]);
 
   useEffect(() => {
-    if (isLoggedIn && !userDashboard) {
-      fetchUserDashboard();
+    if (isLoggedIn && !currentUser) {
+      fetchUserIncome();
     }
-  }, [isLoggedIn, userDashboard]);
+  }, [isLoggedIn, currentUser]);
 
   // Fetch User Dashboard info
-  const fetchUserDashboard = () => {
-    fetch("/api/user", {
+  const fetchUserIncome = () => {
+    fetch("/api/user-income", {
       method: "GET",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
     })
       .then((response) => response.json())
       .then((data) => {
-        setUserDashboard(data); // Update user data
-        setCurrentUser(data.user.ID);
+        setCurrency(data.currency);
+        setRecurrency(data.recurrency);
+        setUserIncomeTypes(data.income_type);
+        setUserUserCagegory(data.user_categories);
+        setUserFinancialItem(data.financial_user_items);
       })
       .catch((error) => console.error("Error fetching user data:", error));
   };
 
   // Toggle the Income panel (open/close)
   const toggleIncomePanel = useCallback(() => {
-    setopenToggleIncome((prevState) => !prevState); // Toggle state
+    setOpenToggleIncome((prevState) => !prevState); // Toggle state
   }, []);
 
   // Open the Income Create Modal (reset the Income to null)
@@ -69,9 +83,16 @@ const UserIncome = () => {
     setIsModalIncomeOpen(true); // Open the income edit modal
   }, []);
 
+  // Open the Income Page Modal
+  const openViewIncomeModal = useCallback((income) => {
+    setcurrentIncome(income); // Ensure the current Income is empty
+    setIsModalIncomePageOpen(true); // Open the income create modal
+  }, []);
+
   // Open the Delete Modal (set the item and type to delete)
   const openDeleteModal = useCallback((item, type) => {
-    if (item && item.ID) {
+    console.log(item);
+    if (item) {
       setItemToDelete(item); // Set the item to delete
       setDeleteType(type); // Set the type of item to delete
       setIsDeleteModalOpen(true); // Open the delete modal
@@ -79,6 +100,7 @@ const UserIncome = () => {
       console.error("Invalid item or missing ID"); // Log error if item or ID is missing
     }
   }, []);
+
   // Open the Category Modal (pass the category type to set)
   const openCategoryModal = useCallback((type) => {
     setCurrentCategory(type); // Set the category type
@@ -97,6 +119,12 @@ const UserIncome = () => {
     setcurrentIncome(null); // Reset the category type
   }, []);
 
+  // Close the Income Modal (reset state)
+  const closeIncomePageModal = useCallback(() => {
+    setIsModalIncomePageOpen(false); // Close the modal
+    setcurrentIncome(null); // Reset the category type
+  }, []);
+
   // Close the Category Modal (reset state)
   const closeCategoryModal = useCallback(() => {
     setisModalCategoryOpen(false); // Close the modal
@@ -107,16 +135,15 @@ const UserIncome = () => {
   const handleIncomeSubmit = (data) => {
     // Determine the HTTP method (POST for new asset, PUT for updating an existing one)
     const method = currentIncome ? "PUT" : "POST";
-
     // Set the URL for the API request (use asset ID for updating)
     const url = currentIncome
-      ? `/api/income/${currentIncome.ID}`
+      ? `/api/income-update/${data.FinancialUserItemId}`
       : "/api/income";
 
-    // If there are no taxes, the taxes array will be empty, but we ensure that 'Taxes' is present
+    // Insert new parameters to the object
     const dataToSend = currentIncome
       ? { ...data, IncomeValue: parseFloat(data.IncomeValue) }
-      : { ...data, userID: currentUser };
+      : { ...data };
 
     // Send the data to the server
     fetch(url, {
@@ -142,7 +169,7 @@ const UserIncome = () => {
         // Show a success message based on whether it's a new asset or an update
         toastr.success(currentIncome ? "Income updated!" : "Income created!");
         setIsModalIncomeOpen(false); // Close the modal
-        fetchUserDashboard(); // Refresh the user dashboard data
+        fetchUserIncome(); // Refresh the user dashboard data
       })
       .catch((error) => {
         // Log any error during the save process
@@ -153,13 +180,13 @@ const UserIncome = () => {
 
   // Item Delete handle
   const handleDeleteItem = (item) => {
-    if (!item || !item.ID) return;
-    fetch(`/api/delete-${deleteType}/${item.ID}`, {
+    if (!item || !item.financialUserItemId) return;
+    fetch(`/api/delete-${deleteType}/${item.financialUserItemId}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ itemId: item.ID }),
+      body: JSON.stringify({ itemId: item.financialUserItemId }),
       credentials: "include",
     })
       .then((response) => response.json())
@@ -169,7 +196,7 @@ const UserIncome = () => {
             deleteType.charAt(0).toUpperCase() + deleteType.slice(1)
           } Successfully Deleted!`
         );
-        fetchUserDashboard();
+        fetchUserIncome();
         closeDeleteModal();
         setDeleteType(null);
       })
@@ -196,7 +223,7 @@ const UserIncome = () => {
             Back
           </Link>
           <h1 className="text-2xl font-bold text-blue-600 w-full text-center">
-            Incomes Actuals
+            My Incomes
           </h1>
         </div>
       </div>
@@ -207,7 +234,7 @@ const UserIncome = () => {
             className="flex justify-between w-full px-4 py-2 text-left text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition cursor-pointer"
             onClick={toggleIncomePanel}
           >
-            <span>My Actuals Incomes</span>
+            <span>Incomes</span>
             <ChevronUpIcon
               className={`w-5 h-5 transition ${
                 openToggleIncome ? "rotate-180" : ""
@@ -221,7 +248,7 @@ const UserIncome = () => {
                 className="px-4 py-2 mb-3 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 transition"
                 onClick={() => openCreateIncomeModal()}
               >
-                New Actuals
+                New Income
               </button>
 
               <button
@@ -231,62 +258,46 @@ const UserIncome = () => {
                 New Income Category
               </button>
 
-              {userDashboard?.userIncome?.length > 0 ? (
+              {userFinancialItem && userFinancialItem.length > 0 ? (
                 <div className="overflow-x-auto">
-                  {" "}
                   <table className="w-full bg-white rounded-lg shadow-md border">
                     <thead>
                       <tr className="bg-gray-100">
+                        <th className="px-4 py-2 border-b"></th>
                         <th className="px-4 py-2 border-b">Name</th>
                         <th className="px-4 py-2 border-b">Type</th>
-                        <th className="px-4 py-2 border-b">Value</th>
-                        <th className="px-4 py-2 border-b">Recurrence</th>
-                        <th className="px-4 py-2 border-b">StartDate</th>
-                        <th className="px-4 py-2 border-b">Shared</th>
-                        <th className="px-4 py-2 border-b">Tax</th>
+                        <th className="px-4 py-2 border-b">Recurrency</th>
+                        <th className="px-4 py-2 border-b">Start Date</th>
+
                         <th className="px-4 py-2 border-b"></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {userDashboard.userIncome.map((income, index) => (
+                      {userFinancialItem.map((income, index) => (
                         <tr key={index} className="text-center">
+                          <td className="px-4 py-2 border-b space-x-2">
+                            <button
+                              className="px-3 py-1 text-xs font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600"
+                              onClick={() => openViewIncomeModal(income)}
+                            >
+                              Open
+                            </button>
+                          </td>
+
                           <td className="px-4 py-2 border-b">
-                            {income.IncomeName || "N/A"}
+                            {income.financialUserItemName || "N/A"}
                           </td>
                           <td className="px-4 py-2 border-b">
-                            {income.IncomeType.IncomeTypeName || "N/A"}
+                            {income.incomeTypeName || "N/A"}
                           </td>
                           <td className="px-4 py-2 border-b">
-                            {income.IncomeValue || "N/A"}
+                            {income.recurrencyName || "N/A"}
                           </td>
+
                           <td className="px-4 py-2 border-b">
-                            {income.IncomeRecurrence || "N/A"}
-                          </td>
-                          <td className="px-4 py-2 border-b">
-                            {income.IncomeStartDate
-                              ? new Date(
-                                  income.IncomeStartDate
-                                ).toLocaleDateString()
+                            {income.createdAt
+                              ? new Date(income.createdAt).toLocaleDateString()
                               : "N/A"}
-                          </td>
-                          <td className="px-4 py-2 border-b">
-                            {income.SharedIncome ? "Yes" : "No"}
-                          </td>
-                          <td className="px-4 py-2 border-b">
-                            {income.UserTaxes && income.UserTaxes.length > 0 ? (
-                              <div className="flex flex-wrap gap-2">
-                                {income.UserTaxes.map((UserTax, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="p-1 bg-blue-100 rounded-lg shadow-sm text-sm font-medium text-blue-800"
-                                  >
-                                    {UserTax.Tax?.TaxName || "Tax Name"}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-gray-500">No Taxes</span>
-                            )}
                           </td>
 
                           <td className="px-4 py-2 border-b space-x-2">
@@ -317,6 +328,7 @@ const UserIncome = () => {
           )}
         </div>
       </div>
+
       {isModalIncomeOpen && (
         <Modal
           onClose={closeIncomeModal}
@@ -325,9 +337,17 @@ const UserIncome = () => {
           <IncomeForm
             onSubmit={handleIncomeSubmit}
             income={currentIncome}
+            userCategory={userUserCagegory}
+            currency={currency}
+            recurrency={recurrency}
             onClose={closeIncomeModal}
           />
         </Modal>
+      )}
+      {isModalIncomePageOpen && (
+        <ModalLarge onClose={closeIncomePageModal}>
+          <IncomePage income={currentIncome} onClose={closeIncomePageModal} />
+        </ModalLarge>
       )}
       {isDeleteModalOpen && (
         <Modal
@@ -347,10 +367,12 @@ const UserIncome = () => {
         </Modal>
       )}
       {isModalCategoryOpen && (
-        <ModalLarge onClose={closeCategoryModal} title={`Setup Categories`}>
+        <ModalLarge onClose={closeCategoryModal} title={`Setup Category`}>
           <CategoryForm
             onClose={closeCategoryModal}
             category={currentCategory}
+            entityTypes={userIncomeTypes}
+            userCategory={userUserCagegory}
           />
         </ModalLarge>
       )}

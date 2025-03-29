@@ -76,8 +76,26 @@ func main() {
 	http.Handle("/api/user-edit", corsMiddleware.Handler(http.HandlerFunc(
 		middlewares.AuthMiddleware(handlers.UserUpdate))))
 
-	http.Handle("/api/user-income-forecast", corsMiddleware.Handler(http.HandlerFunc(
-		middlewares.AuthMiddleware(handlers.UserIncomeForecast))))
+	http.Handle("/api/user-income", corsMiddleware.Handler(http.HandlerFunc(
+		middlewares.AuthMiddleware(handlers.UserIncome))))
+
+	http.Handle("/api/income", corsMiddleware.Handler(http.HandlerFunc(
+		middlewares.AuthMiddleware(handlers.CreateIncome))))
+
+	http.Handle("/api/income-update/{id}", corsMiddleware.Handler(http.HandlerFunc(
+		middlewares.AuthMiddleware(handlers.UpdateIncome))))
+
+	http.Handle("/api/delete-income/{id}", corsMiddleware.Handler(http.HandlerFunc(
+		middlewares.AuthMiddleware(handlers.DeleteIncome))))
+
+	http.Handle("/api/income-item/{id}", corsMiddleware.Handler(http.HandlerFunc(
+		middlewares.AuthMiddleware(handlers.IncomeItem))))
+
+	http.Handle("/api/income-category", corsMiddleware.Handler(http.HandlerFunc(
+		middlewares.AuthMiddleware(handlers.CreateIncomeCategory))))
+
+	http.Handle("/api/delete-income-category", corsMiddleware.Handler(http.HandlerFunc(
+		middlewares.AuthMiddleware(handlers.DeleteIncomeCategory))))
 
 	// Start the server
 	log.Printf("Server running on port %s", cfg.Port)

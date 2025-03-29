@@ -29,7 +29,7 @@ INSERT INTO Entity (EntityName, EntityType,EntityCategory,IsActive) VALUES
 
 
 INSERT INTO IncomeType (IncomeTypeName, IncomeDescription, EntityID) VALUES
-/*1*/('Salary', 'Income provenient of a service for a company or person, usually recurring for a fixed amount.',1),
+/*1*/('Salary', 'Income provenient of a service for a company or person, usually recurring for a fixed amount.',5),
 /*2*/('Rent', 'Income from an owning asset (vehicle, real state…) for a predefined amount of time',11),
 /*3*/('Provided Service', 'Income from an one time service, receiving the amount agreed between both parties',1),
 /*4*/('Investment', 'Income from any type of investment, through stock, bank, crypto, or any associated activities which returns an amount of money, based on an initial funding.',1),
@@ -107,8 +107,8 @@ INSERT INTO UserCategory (UserCategoryName, UserProfileID, EntityID, IsActive) V
 
 
 -- FinancialUserItemName Seeder
-INSERT INTO  FinancialUserItem (FinancialUserItemName, EntityID,UserEntityID, RecurrencyID, FinancialUserEntityItemID,ParentFinancialUserItemID,IsActive) VALUES 
-/*1*/('Salario Exterior', 5,1,1,2,NULL,TRUE),
+INSERT INTO FinancialUserItem (FinancialUserItemName, EntityID,UserEntityID, RecurrencyID, FinancialUserEntityItemID,ParentFinancialUserItemID,IsActive) VALUES 
+/*1*/('Salario Exterior', 5,1,2,2,NULL,TRUE),
 /*2*/('Novo Laptop', 6,1,1,1,NULL,TRUE),
 /*3*/('Imposto de Renda Salario', 7,1,1,2,1,TRUE),
 /*4*/('Cambio do Salario', 8,1,2,6,1,TRUE),
