@@ -77,7 +77,8 @@ function User() {
                 <div className="w-20 h-20 bg-gray-300 rounded-full"></div>
                 <div className="ml-4">
                   <h2 className="text-xl font-medium text-gray-900">
-                    {userDashboard.user.firstName} {userDashboard.user.lastName}
+                    {userDashboard.user.first_name}{" "}
+                    {userDashboard.user.last_name}
                   </h2>
                 </div>
               </div>
@@ -91,22 +92,22 @@ function User() {
             <div className="space-y-4 mt-4">
               <InfoRow
                 label="Name"
-                value={`${userDashboard.user.firstName} ${userDashboard.user.lastName}`}
+                value={`${userDashboard.user.first_name} ${userDashboard.user.last_name}`}
               />
-              <InfoRow label="Email" value={userDashboard.user.emailAddress} />
+              <InfoRow label="Email" value={userDashboard.user.email_address} />
 
               <InfoRow
                 label="Date of Birth"
-                value={formatDate(userDashboard.user.dob)}
+                value={formatDate(userDashboard.user.date_of_birth)}
               />
               <InfoRow
                 label="Account Created"
-                value={formatDate(userDashboard.user.createdAt)}
+                value={formatDate(userDashboard.user.created_at)}
               />
               <InfoRow
                 label="User Subscription"
                 value={
-                  userDashboard.user.userSubscription ? "Active" : "Inactive"
+                  userDashboard.user.user_subscription ? "Active" : "Inactive"
                 }
               />
             </div>
@@ -122,17 +123,11 @@ function User() {
                 <div className="flex flex-col items-center justify-center gap-3 mt-6">
                   <div className="flex flex-wrap gap-2 w-full justify-center">
                     <Link
-                      to="/user-income-forecast"
+                      to="/user-income"
                       state={{ userID: currentUser }}
                       className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition text-center"
                     >
-                      Forecast
-                    </Link>
-                    <Link
-                      to="/user-income-actuals"
-                      className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 transition text-center"
-                    >
-                      Actuals
+                      Manage
                     </Link>
                   </div>
                 </div>

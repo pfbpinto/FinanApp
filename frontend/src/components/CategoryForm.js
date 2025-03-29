@@ -1,27 +1,88 @@
 import React, { useEffect, useState } from "react";
+import toastr from "toastr";
 
-const CategoryForm = ({ category, entityTypes, userCategory, onClose }) => {
+const CategoryForm = ({ userCategory, onClose }) => {
   const [categoryData, setCategoryData] = useState([]);
-  const [incomeTypeData, setincomeTypeData] = useState([]);
   const [name, setName] = useState("");
-  const [cat, setCat] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // States confirmation modal and to Tax delete
-
   useEffect(() => {
     setCategoryData(userCategory);
   }, [userCategory]);
 
-  useEffect(() => {
-    setincomeTypeData(entityTypes);
-  }, [entityTypes]);
-
+  console.log(categoryData);
   const handleCategorySubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    try {
+      const response = await fetch("/api/income-category", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_category_name: name,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save category");
+      }
+
+      const { user_category_id } = await response.json();
+
+      if (!user_category_id) {
+        throw new Error("Invalid response from server");
+      }
+
+      // Construindo manualmente o objeto completo
+      const newCategory = {
+        user_category_id,
+        user_category_name: name, // Pegando o nome do input
+      };
+
+      setCategoryData((prev) => [...prev, newCategory]); // Atualiza a tabela com a nova categoria
+      setName(""); // Limpa o input
+      toastr.success("Income Category successfully added");
+    } catch (error) {
+      setError(error.message);
+      toastr.error("Failed to save category");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    if (!window.confirm("Are you sure you want to delete this category?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/delete-income-category`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ user_category_id: categoryId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete category");
+      }
+
+      // Remove a categoria do estado local
+      setCategoryData((prev) =>
+        prev.filter((cat) => cat.user_category_id !== categoryId)
+      );
+
+      toastr.success("Category deleted successfully");
+    } catch (error) {
+      toastr.error("Failed to delete category");
+    }
   };
 
   return (
@@ -49,29 +110,6 @@ const CategoryForm = ({ category, entityTypes, userCategory, onClose }) => {
                   required
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 />
-              </div>
-
-              <div className="mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Income Type
-                </label>
-                <select
-                  required
-                  value={cat}
-                  name="item_type_name_id"
-                  onChange={(e) => setCat(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select Income Category</option>
-                  {incomeTypeData?.map((type) => (
-                    <option
-                      key={type.income_type_id}
-                      value={type.income_type_id}
-                    >
-                      {type.income_type_name}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               {error && <div className="text-red-500 text-sm">{error}</div>}
@@ -104,8 +142,8 @@ const CategoryForm = ({ category, entityTypes, userCategory, onClose }) => {
             <table className="min-w-full table-auto border-collapse">
               <thead>
                 <tr>
-                  <th className="border px-4 py-2 text-left">ID</th>
                   <th className="border px-4 py-2 text-left">Category</th>
+                  <th className="border px-4 py-2 text-left"></th>
                 </tr>
               </thead>
               <tbody>
@@ -113,16 +151,23 @@ const CategoryForm = ({ category, entityTypes, userCategory, onClose }) => {
                   categoryData.map((cat) => (
                     <tr key={cat.user_category_id} className="hover:bg-gray-50">
                       <td className="border border-gray-300 px-4 py-2">
-                        {cat.user_category_id}
+                        {cat.user_category_name}
                       </td>
                       <td className="border border-gray-300 px-4 py-2">
-                        {cat.user_category_name}
+                        <button
+                          onClick={() =>
+                            handleDeleteCategory(cat.user_category_id)
+                          }
+                          className="px-3 py-1 text-sm text-white bg-red-500 rounded-md hover:bg-red-600"
+                        >
+                          X
+                        </button>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="2" className="text-center py-3">
+                    <td colSpan="3" className="text-center py-3">
                       No categories found.
                     </td>
                   </tr>
@@ -132,41 +177,6 @@ const CategoryForm = ({ category, entityTypes, userCategory, onClose }) => {
           </div>
         </div>
         <br></br>
-        {/* Section to display existing categories */}
-        <div className="min-w-80">
-          <h2 className="text-xl font-semibold mb-4">
-            Current {category}s Types
-          </h2>
-          <div
-            id="cat-table-container"
-            className="overflow-x-auto max-h-80 overflow-y-auto border rounded-md"
-          >
-            <table className="min-w-full table-auto border-collapse">
-              <thead className="sticky top-0 bg-white shadow-md">
-                <tr>
-                  <th className="px-4 py-2 text-left border-b">ID</th>
-                  <th className="px-4 py-2 text-left border-b">Name</th>
-                  <th className="px-4 py-2 text-left border-b">Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {incomeTypeData?.map((income) => (
-                  <tr key={income.income_type_id}>
-                    <td className="px-4 py-2 border-b">
-                      {income.income_type_id}
-                    </td>
-                    <td className="px-4 py-2 border-b">
-                      {income.income_type_name}
-                    </td>
-                    <td className="px-4 py-2 border-b">
-                      {income.income_description}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
       </div>
       <br></br>
       {/* Cancel Button at the bottom */}

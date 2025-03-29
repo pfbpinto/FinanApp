@@ -9,8 +9,7 @@ import User from "./pages/User";
 import UserEdit from "./pages/UserPage/Edit";
 import Register from "./pages/Register";
 import NotFoundPage from "./pages/NotFoundPage";
-import UserIncomeF from "./pages/UserPage/IncomeForecast";
-import UserIncomeA from "./pages/UserPage/IncomeActuals";
+import UserIncome from "./pages/UserPage/Income";
 import UserExpenseF from "./pages/UserPage/ExpenseForecast";
 import UserExpenseA from "./pages/UserPage/ExpenseActuals";
 import UserAssetF from "./pages/UserPage/AssetForecast";
@@ -29,8 +28,7 @@ function App() {
             <Route path="/user" element={<User />} />
             <Route path="/user-page/edit/:userId" element={<UserEdit />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/user-income-forecast" element={<UserIncomeF />} />
-            <Route path="/user-income-actuals" element={<UserIncomeA />} />
+            <Route path="/user-income" element={<UserIncome />} />
             <Route path="/user-expense-forecast" element={<UserExpenseF />} />
             <Route path="/user-expense-actuals" element={<UserExpenseA />} />
             <Route path="/user-asset-forecast" element={<UserAssetF />} />
