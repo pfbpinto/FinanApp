@@ -1,15 +1,14 @@
 package models
 
-import "time"
-
 // UserProfile represents the user data structure used throughout the app
+
 type UserProfile struct {
-	UserProfileID    int       `json:"userProfileID"`
-	FirstName        string    `json:"firstName"`
-	LastName         string    `json:"lastName"`
-	DateOfBirth      string    `json:"dob"`
-	UserPassword     string    `json:"userPassword"`
-	EmailAddress     string    `json:"emailAddress"`
-	UserSubscription bool      `json:"userSubscription"`
-	CreatedAt        time.Time `json:"createdAt"`
+	UserProfileID    int    `json:"user_profile_id"`
+	FirstName        string `json:"first_name"`
+	LastName         string `json:"last_name"`
+	DateOfBirth      string `json:"date_of_birth"`
+	UserPassword     string `json:"user_password"`
+	EmailAddress     string `json:"email_address"`
+	UserSubscription bool   `json:"user_subscription"`
+	CreatedAt        string `json:"created_at"`
 }

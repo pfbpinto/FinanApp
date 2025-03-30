@@ -394,7 +394,6 @@ BEGIN
     -- Informar que precisa ou mudar a data ou remover o actual associado
          p_Message := '{"status": "fail", "message": "There is an actual record associated with a forecast in a future data provided, delete the actual or adjust the date, inactivation aborted"}';
     END IF;
-
 END;
 $$;
 
