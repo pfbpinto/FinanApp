@@ -29,7 +29,7 @@ INSERT INTO Entity (EntityName, EntityType,EntityCategory,IsActive) VALUES
 
 
 INSERT INTO IncomeType (IncomeTypeName, IncomeDescription, EntityID) VALUES
-/*1*/('Salary', 'Income provenient of a service for a company or person, usually recurring for a fixed amount.',5),
+/*1*/('Salary', 'Income provenient of a service for a company or person, usually recurring for a fixed amount.',1),
 /*2*/('Rent', 'Income from an owning asset (vehicle, real state…) for a predefined amount of time',11),
 /*3*/('Provided Service', 'Income from an one time service, receiving the amount agreed between both parties',1),
 /*4*/('Investment', 'Income from any type of investment, through stock, bank, crypto, or any associated activities which returns an amount of money, based on an initial funding.',1),
@@ -80,11 +80,35 @@ INSERT INTO Currency ( CurrencyName,CurrencyAbreviation, CurrencySymbol) VALUES
 
 -- User Seeder
 INSERT INTO Recurrency (RecurrencyName, RecurrencyPeriod) VALUES 
-/*1*/('One Time', 1),
-/*2*/('Monthly', 1),
-/*3*/('Quarterly', 1),
-/*4*/('Yearly', 1);
+/*1*/('One Time', 'today'),
+/*2*/('Monthly', '1 month'),
+/*3*/('Quarterly','4 months'),
+/*4*/('Yearly', '1 year')
+/*5*/('Variable','undefined');
+/*-- ATUALIZANDO A TABELA RECURRENCY PRA FUTURAMENTE UPGRADE A PROCEDURE PARA UTILIZAR O PERIDO DIRETAMENTE DA TABELA COMO EXEMPLO ABAIXO:
+      -- Configura número de inserções e intervalo conforme a recorrência
+        IF p_RecurrencyID = 1 THEN -- One time
+            v_Iterations := 1;
+            v_Increment := '1 day'::INTERVAL;
+        ELSIF p_RecurrencyID = 2 THEN -- Monthly
+            v_Iterations := 12;
+            v_Increment := '1 month'::INTERVAL;
+        ELSIF p_RecurrencyID = 3 THEN -- Quarterly
+            v_Iterations := 4;
+            v_Increment := '4 months'::INTERVAL;
+        ELSIF p_RecurrencyID = 4 THEN -- Yearly
+            v_Iterations := 1;
+            v_Increment := '1 year'::INTERVAL;
+        ELSE
+            RAISE EXCEPTION 'Invalid RecurrencyID';
+        END IF;
 
+        -- Insere múltiplos registros conforme a recorrência
+        v_CurrentDate := p_BeginDate;
+        FOR i IN 1..v_Iterations LOOP
+            -- Define a data do próximo registro para calcular a end date
+            v_NextDate := v_CurrentDate + v_Increment;
+ */           
 -- User Seeder
 INSERT INTO UserProfile (FirstName, LastName, DateOfBirth, UserPassword, EmailAddress, UserSubscription) 
 VALUES 
@@ -94,6 +118,7 @@ VALUES
 --User AssetSeeder
 INSERT INTO UserAsset (AssetTypeID, UserProfileID, UserAssetName, UserAssetValueAmount, UserAssetAcquisitionBeginDate, UserAssetAcquisitionEndDate, IsActive) VALUES 
 (1, 1, 'Apartamento Onix', 100000.00, '2020-01-01', NULL, TRUE);
+
 
 --User Category Seeder
 INSERT INTO UserCategory (UserCategoryName, UserProfileID, EntityID, IsActive) VALUES 
@@ -107,8 +132,8 @@ INSERT INTO UserCategory (UserCategoryName, UserProfileID, EntityID, IsActive) V
 
 
 -- FinancialUserItemName Seeder
-INSERT INTO FinancialUserItem (FinancialUserItemName, EntityID,UserEntityID, RecurrencyID, FinancialUserEntityItemID,ParentFinancialUserItemID,IsActive) VALUES 
-/*1*/('Salario Exterior', 5,1,2,2,NULL,TRUE),
+INSERT INTO  FinancialUserItem (FinancialUserItemName, EntityID,UserEntityID, RecurrencyID, FinancialUserEntityItemID,ParentFinancialUserItemID,IsActive) VALUES 
+/*1*/('Salario Exterior', 5,1,1,2,NULL,TRUE),
 /*2*/('Novo Laptop', 6,1,1,1,NULL,TRUE),
 /*3*/('Imposto de Renda Salario', 7,1,1,2,1,TRUE),
 /*4*/('Cambio do Salario', 8,1,2,6,1,TRUE),

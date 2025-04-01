@@ -21,7 +21,7 @@ STORED PROCEDURE DESCRIPTION:
    Procedure altera valores de income baseados na data (utilizados para modificar um valor de um income a partir de uma data para frente no forecast)
    Tambe utilizada para inativar (income não é mais valido, porém mantem o historico) pela Flag IsActive
 
-STORED PROCEDURE NAME: DeleteUserParentIncome
+STORED PROCEDURE NAME: DeleteUserParentIncomecls
 STORED PROCEDURE DESCRIPTION: 
    Deleta um User Parent Income, e todos seus childs associados.
 
@@ -73,7 +73,14 @@ STORED PROCEDURE DESCRIPTION:
 STORED PROCEDURE NAME: DeleteUserAssetChildIncomeTax
 STORED PROCEDURE DESCRIPTION: 
      Deletar um tax child User Asset Income. Essa procedure é para um hard delete, excluindo todo historico tanto de forecasts e de actuals. Não existe opção de soft delete em childs Aqui todos os dados são deletados sem possibilidade de recuperação.
+---------------------------------------------------------------------------------------------
+------------------------------------------USER PARENT EXPENSE MANAGEMENT----------------------
+---------------------------------------------------------------------------------------------
 
+
+STORED PROCEDURE NAME: CreateUserParentExpense
+STORED PROCEDURE DESCRIPTION: 
+    Procedure para criar um novo parent expense para o usuario. Associado na tabela financialuseritem o novo record e criando (baseado na recurency escolhida) todos os records the forecast associados.
 */
   
 CREATE OR REPLACE PROCEDURE CreateUser(
@@ -175,7 +182,7 @@ Navegue até Income, e veja os records no sitema
 LANGUAGE plpgsql
 AS $$
 DECLARE 
-    NewFinancialUserItemid INT;
+    v_NewFinancialUserItemid INT;
     v_CurrentDate DATE;
     v_NextDate DATE;
     v_Iterations INT;
@@ -394,6 +401,7 @@ BEGIN
     -- Informar que precisa ou mudar a data ou remover o actual associado
          p_Message := '{"status": "fail", "message": "There is an actual record associated with a forecast in a future data provided, delete the actual or adjust the date, inactivation aborted"}';
     END IF;
+
 END;
 $$;
 
@@ -800,7 +808,7 @@ CREATE OR REPLACE PROCEDURE DeleteUserAssetParentIncome(
 /* ----------------------------------------------------------------------
 STORED PROCEDURE NAME: DeleteUserAssetParentIncome
 STORED PROCEDURE VERSION: 1.0
-STORED PROCEDURE LAST UPDATED DATE: 30-Mar-2025
+STORED PROCEDURE LAST UPDATED DATE: 31-Mar-2025
 STORED PROCEDURE DESCRIPTION: 
    Deletar o UserAsset. Essa procedure é para um hard delete, excluindo todo historico tanto de forecasts e de actuals (soft deletes são executados pelo UpdateUserAssetParentIncome, pela flag IsActive). Aqui todos os dados são deletados sem possibilidade de recuperação.
    Todos os items relacionado a user Parent serão deletados.
@@ -1299,3 +1307,143 @@ EXCEPTION
             SQLERRM
         );
 END;
+
+
+-- STORED PROCEDURE TO CREATE NEW PARENT EXPENSE
+CREATE OR REPLACE PROCEDURE CreateUserParentExpense(
+    IN p_UserID INT,
+    IN p_FinancialUserItemName VARCHAR(255),
+    IN p_RecurrencyID INT,
+    IN p_FinancialUserEntityItemID INT,
+    IN p_ParentExpenseAmount NUMERIC(15,2),
+    IN p_BeginDate DATE,
+    OUT p_Message TEXT
+)
+
+/* ----------------------------------------------------------------------
+STORED PROCEDURE NAME: CreateUserParentExpense
+STORED PROCEDURE VERSION: 1.0
+STORED PROCEDURE LAST UPDATED DATE: 30-Mar-2025
+STORED PROCEDURE DESCRIPTION: 
+    Procedure para criar um novo parent expense para o usuario. Associado na tabela financialuseritem o novo record e criando (baseado na recurency escolhida) todos os records the forecast associados.
+STORED PROCEDURE TEST CASE(S):
+
+CALL CreateUserParentExpense (13,'Test Expense One Time-01',1,1,30,'05-03-2025','')  -- Para Criação de "One Time" expenses
+CALL CreateUserParentExpense (13,'Test Expense Monthly-01',2,2,100,'05-03-2025','') -- Para Criação de "Monthly" expenses
+CALL CreateUserParentExpense (13,'Test Expense Quarterly-01',3,4,1000,'05-03-2025','')-- Para Criação de "Quarterly" expenses
+CALL CreateUserParentExpense (13,'Test Expense Yearly-01',4,5,2500,'05-03-2025','') -- Para Criação de "Time Yearly" expenses
+
+BACKEND VISUALIZATION:
+  
+select fo.userfinancialforecastid,F.financialuseritemid,U.UserProfileId,F.userentityid,U.FirstName,U.LastName,F.financialuseritemname,E.EntityName,E.entitytype,FO.userfinancialforecastamount,FO.userfinancialforecastbegindate,FO.userfinancialforecastenddate from UserProfile U
+Join financialuseritem F on F.userentityid=U.UserProfileID
+right join userfinancialforecast FO on FO.financialuseritemid=F.financialuseritemid
+join entity E ON E.entityid=F.entityid
+where F.userentityid=13  -- Selecione o UserProfileID do usuario que foi criado os expense
+and E.EntityID=6
+-- and f.financialuseritemid=59 -- Se quiser granularidade no item que foi criado, use o financialuseritemid associado ao expense
+order by 1,10
+
+USER INTERFACE:
+Navegue até Expense, e veja os records no sitema
+----------------------------------------------------*/
+LANGUAGE plpgsql
+AS $$
+DECLARE 
+    v_NewFinancialUserItemid INT;
+    v_CurrentDate DATE;
+    v_NextDate DATE;
+    v_Iterations INT;
+    v_Increment INTERVAL;
+    i INT;
+BEGIN
+    -- Validações de campos obrigatórios
+    IF p_UserID IS NULL THEN 
+        p_Message := '{"status": "fail", "message": "Missing UserID"}';
+        RETURN;
+    END IF;
+    IF p_FinancialUserItemName IS NULL OR p_FinancialUserItemName = '' THEN 
+        p_Message := '{"status": "fail", "message": "Missing FinancialUserItemName"}';
+        RETURN;
+    END IF;
+    IF p_RecurrencyID IS NULL THEN 
+        p_Message := '{"status": "fail", "message": "Missing RecurrencyID"}';
+        RETURN;
+    END IF;
+    IF p_FinancialUserEntityItemID IS NULL THEN 
+        p_Message := '{"status": "fail", "message": "Missing FinancialUserEntityItemID"}';
+        RETURN;
+    END IF;
+    IF p_ParentExpenseAmount IS NULL OR p_ParentExpenseAmount <= 0 THEN 
+        p_Message := '{"status": "fail", "message": "Invalid p_ParentExpenseAmount"}';
+        RETURN;
+    END IF;
+    IF p_BeginDate IS NULL THEN 
+        p_Message := '{"status": "fail", "message": "Missing BeginDate"}';
+        RETURN;
+    END IF;
+
+    -- Inicia transação manualmente
+    BEGIN
+        -- Insere um novo Parent Expense
+        INSERT INTO FinancialUserItem (
+            FinancialUserItemName, EntityID, UserEntityID, RecurrencyID, 
+            FinancialUserEntityItemID, ParentFinancialUserItemID
+        ) VALUES (
+            p_FinancialUserItemName, 6, p_UserID, p_RecurrencyID, 
+            p_FinancialUserEntityItemID, NULL
+        ) RETURNING FinancialUserItemID INTO v_NewFinancialUserItemid;
+
+        -- Configura número de inserções e intervalo conforme a recorrência
+        IF p_RecurrencyID = 1 THEN -- One time
+            v_Iterations := 1;
+            v_Increment := '1 day'::INTERVAL;
+        ELSIF p_RecurrencyID = 2 THEN -- Monthly
+            v_Iterations := 12;
+            v_Increment := '1 month'::INTERVAL;
+        ELSIF p_RecurrencyID = 3 THEN -- Quarterly
+            v_Iterations := 4;
+            v_Increment := '4 months'::INTERVAL;
+        ELSIF p_RecurrencyID = 4 THEN -- Yearly
+            v_Iterations := 1;
+            v_Increment := '1 year'::INTERVAL;
+        ELSE
+            RAISE EXCEPTION 'Invalid RecurrencyID';
+        END IF;
+
+        -- Insere múltiplos registros conforme a recorrência
+        v_CurrentDate := p_BeginDate;
+        FOR i IN 1..v_Iterations LOOP
+            -- Define a data do próximo registro para calcular a end date
+            v_NextDate := v_CurrentDate + v_Increment;
+            
+            INSERT INTO UserFinancialForecast (
+                usercategoryid, financialuseritemid, userfinancialforecastbegindate, 
+                userfinancialforecastenddate, userfinancialforecastamount, currencyid
+            ) VALUES (
+                NULL, v_NewFinancialUserItemid, v_CurrentDate, 
+                CASE 
+                    WHEN p_RecurrencyID = 1 THEN v_CurrentDate + INTERVAL '1 day' - INTERVAL '1 day' -- One Time
+                    WHEN p_RecurrencyID = 2 AND i < v_Iterations THEN v_NextDate - INTERVAL '1 day' -- Monthly
+                    WHEN p_RecurrencyID = 2 AND i = v_Iterations THEN (v_CurrentDate + INTERVAL '1 month') - INTERVAL '1 day' -- Último mês
+                    WHEN p_RecurrencyID = 3 AND i < v_Iterations THEN v_NextDate - INTERVAL '1 day' -- Quarterly
+                    WHEN p_RecurrencyID = 3 AND i = v_Iterations THEN (v_CurrentDate + INTERVAL '4 months') - INTERVAL '1 day' -- Último trimestre
+                    WHEN p_RecurrencyID = 4 THEN v_CurrentDate + INTERVAL '1 year' - INTERVAL '1 day' -- Yearly
+                END,
+                p_ParentExpenseAmount, 1
+            );
+            
+            -- Atualiza data para a próxima recorrência
+            v_CurrentDate := v_NextDate;
+        END LOOP;
+
+        -- Se tudo deu certo, define mensagem de sucesso
+        p_Message := '{"status": "success", "message": "New user expense and forecast created successfully."}';
+    EXCEPTION 
+        WHEN OTHERS THEN
+            -- Captura erro e define mensagem de falha
+            p_Message := '{"status": "fail", "message": "Error creating forecast values: ' || SQLERRM || '"}';
+    END;
+END;
+$$;
+
