@@ -2,14 +2,13 @@ import React, { useEffect, useState } from "react";
 
 function IncomeForm({ onSubmit, income, currency, recurrency, onClose }) {
   const [formData, setFormData] = useState({
+    FinancialUserItemId: "",
     FinancialUserItemName: "",
     RecurrencyID: "",
     CurrencyID: "",
     amount: "",
   });
-  const [currentIncome, setCurrentIncome] = useState(null);
 
-  // Atualizar o formData se o objeto income for passado
   useEffect(() => {
     if (income) {
       setFormData({
@@ -19,7 +18,6 @@ function IncomeForm({ onSubmit, income, currency, recurrency, onClose }) {
         CurrencyID: income.currencyId || "",
         amount: income.amount || "",
       });
-      setCurrentIncome(income);
     }
   }, [income]);
 
@@ -52,80 +50,76 @@ function IncomeForm({ onSubmit, income, currency, recurrency, onClose }) {
         />
       </div>
 
-      {!currentIncome ? (
-        <div>
-          <div className="mb-4 flex gap-4">
-            {/* Amount Input */}
-            <div className="w-1/2">
-              <label className="block text-sm font-medium text-gray-700">
-                Amount
-              </label>
-              <input
-                type="number"
-                name="amount"
-                value={formData.amount}
-                onChange={handleChange}
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
-            {/* Currency Select */}
-            <div className="w-1/2">
-              <label className="block text-sm font-medium text-gray-700">
-                Currency
-              </label>
-              <select
-                name="CurrencyID"
-                value={formData.CurrencyID}
-                onChange={handleChange}
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Select Currency</option>
-                {Array.isArray(currency) &&
-                  currency.map((curr, index) => (
-                    <option
-                      key={curr.currency_id || index}
-                      value={curr.currency_id}
-                    >
-                      {curr.currency_name}
-                    </option>
-                  ))}
-              </select>
-            </div>
+      <div>
+        <div className="mb-4 flex gap-4">
+          {/* Amount Input */}
+          <div className="w-1/2">
+            <label className="block text-sm font-medium text-gray-700">
+              Amount
+            </label>
+            <input
+              type="number"
+              name="amount"
+              value={formData.amount}
+              onChange={handleChange}
+              required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
 
-          <div className="mb-4 flex gap-4">
-            {/* Recurrency Select */}
-            <div className="w-1/2">
-              <label className="block text-sm font-medium text-gray-700">
-                Recurrency
-              </label>
-              <select
-                name="RecurrencyID"
-                value={formData.RecurrencyID}
-                onChange={handleChange}
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Select Recurrency</option>
-                {Array.isArray(recurrency) &&
-                  recurrency.map((rec, index) => (
-                    <option
-                      key={rec.recurrency_id || index}
-                      value={rec.recurrency_id}
-                    >
-                      {rec.recurrency_name}
-                    </option>
-                  ))}
-              </select>
-            </div>
+          {/* Currency Select */}
+          <div className="w-1/2">
+            <label className="block text-sm font-medium text-gray-700">
+              Currency
+            </label>
+            <select
+              name="CurrencyID"
+              value={formData.CurrencyID}
+              onChange={handleChange}
+              required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select Currency</option>
+              {Array.isArray(currency) &&
+                currency.map((curr, index) => (
+                  <option
+                    key={curr.currency_id || index}
+                    value={curr.currency_id}
+                  >
+                    {curr.currency_name}
+                  </option>
+                ))}
+            </select>
           </div>
         </div>
-      ) : (
-        <p></p>
-      )}
+
+        <div className="mb-4 flex gap-4">
+          {/* Recurrency Select */}
+          <div className="w-1/2">
+            <label className="block text-sm font-medium text-gray-700">
+              Recurrency
+            </label>
+            <select
+              name="RecurrencyID"
+              value={formData.RecurrencyID}
+              onChange={handleChange}
+              required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select Recurrency</option>
+              {Array.isArray(recurrency) &&
+                recurrency.map((rec, index) => (
+                  <option
+                    key={rec.recurrency_id || index}
+                    value={rec.recurrency_id}
+                  >
+                    {rec.recurrency_name}
+                  </option>
+                ))}
+            </select>
+          </div>
+        </div>
+      </div>
 
       <div className="flex justify-end">
         <button

@@ -3,9 +3,9 @@ package main
 import (
 	"finanapp/config"
 	"finanapp/internal/db"
-	"finanapp/internal/handlers"
 	"finanapp/internal/messaging"
-	"finanapp/internal/middlewares"
+	"finanapp/internal/routes"
+
 	"log"
 	"net/http"
 	"os"
@@ -51,55 +51,19 @@ func main() {
 
 	// CORS middleware configuration
 	corsMiddleware := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"},  // Permitir apenas o frontend React
-		AllowedMethods:   []string{"GET", "POST", "OPTIONS"}, // Métodos permitidos
+		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
-		AllowCredentials: true, // Permitir envio de cookies/sessões
+		AllowCredentials: true,
 	})
 
-	// Configure routes
-	http.HandleFunc("/", middlewares.AuthMiddleware(handlers.Home))
-	http.HandleFunc("/health", handlers.Health)
+	// Use ServeMux instead of default
+	mux := http.NewServeMux()
+	routes.RegisterRoutes(mux, corsMiddleware)
 
-	// React Frontend (com suporte ao middleware de CORS)
-	http.Handle("/api/auth-status", corsMiddleware.Handler(http.HandlerFunc(
-		middlewares.AuthMiddleware(handlers.AuthStatus),
-	)))
-	http.Handle("/api/login", corsMiddleware.Handler(http.HandlerFunc(handlers.LoginReact)))
-	http.Handle("/api/logout", corsMiddleware.Handler(http.HandlerFunc(
-		middlewares.AuthMiddleware(handlers.LogoutReact),
-	)))
-	http.Handle("/api/register", corsMiddleware.Handler(http.HandlerFunc(handlers.RegisterReact)))
-	http.Handle("/api/user", corsMiddleware.Handler(http.HandlerFunc(
-		middlewares.AuthMiddleware(handlers.UserDashboard),
-	)))
-	http.Handle("/api/user-edit", corsMiddleware.Handler(http.HandlerFunc(
-		middlewares.AuthMiddleware(handlers.UserUpdate))))
-
-	http.Handle("/api/user-income", corsMiddleware.Handler(http.HandlerFunc(
-		middlewares.AuthMiddleware(handlers.UserIncome))))
-
-	http.Handle("/api/income", corsMiddleware.Handler(http.HandlerFunc(
-		middlewares.AuthMiddleware(handlers.CreateIncome))))
-
-	http.Handle("/api/income-update/{id}", corsMiddleware.Handler(http.HandlerFunc(
-		middlewares.AuthMiddleware(handlers.UpdateIncome))))
-
-	http.Handle("/api/delete-income/{id}", corsMiddleware.Handler(http.HandlerFunc(
-		middlewares.AuthMiddleware(handlers.DeleteIncome))))
-
-	http.Handle("/api/income-item/{id}", corsMiddleware.Handler(http.HandlerFunc(
-		middlewares.AuthMiddleware(handlers.IncomeItem))))
-
-	http.Handle("/api/income-category", corsMiddleware.Handler(http.HandlerFunc(
-		middlewares.AuthMiddleware(handlers.CreateIncomeCategory))))
-
-	http.Handle("/api/delete-income-category", corsMiddleware.Handler(http.HandlerFunc(
-		middlewares.AuthMiddleware(handlers.DeleteIncomeCategory))))
-
-	// Start the server
+	// Start server
 	log.Printf("Server running on port %s", cfg.Port)
-	err = http.ListenAndServe(":"+cfg.Port, nil)
+	err = http.ListenAndServe(":"+cfg.Port, mux)
 	if err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
