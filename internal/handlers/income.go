@@ -11,185 +11,6 @@ import (
 	"time"
 )
 
-// UserIncome shows the logged-in user's Incomes
-func UserIncome(w http.ResponseWriter, r *http.Request) {
-
-	// Retrieve user from context
-	user, ok := r.Context().Value("user").(models.UserProfile)
-	if !ok {
-		log.Println("UserDashboard: Unauthorized access - no user found in context.")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
-		return
-	}
-
-	// Get Database
-	database := db.GetDB()
-
-	// Query currency
-	currencyQuery := `SELECT currencyid, currencyname, currencyabreviation, currencysymbol, createdat FROM currency`
-	currencyRows, err := database.Query(currencyQuery)
-	if err != nil {
-		log.Println("Error fetching Currency Type:", err)
-		http.Error(w, "Error fetching Currency Type", http.StatusInternalServerError)
-		return
-	}
-	defer currencyRows.Close()
-
-	var currency []models.Currency
-	for currencyRows.Next() {
-		var cc models.Currency
-		if err := currencyRows.Scan(&cc.CurrencyID, &cc.CurrencyName, &cc.CurrencyAbreviation, &cc.CurrencySymbol, &cc.CreatedAt); err != nil {
-			log.Println("Error scanning Currency Type:", err)
-			continue
-		}
-		currency = append(currency, cc)
-	}
-
-	// Query Recurrency
-	recurrencyQuery := `SELECT recurrencyid, recurrencyname, recurrencyperiod, createdat FROM recurrency`
-	recurrencyRows, err := database.Query(recurrencyQuery)
-	if err != nil {
-		log.Println("Error fetching Recurrency:", err)
-		http.Error(w, "Error fetching Recurrency", http.StatusInternalServerError)
-		return
-	}
-	defer recurrencyRows.Close()
-
-	var recurrencies []models.Recurrency
-	for recurrencyRows.Next() {
-		var rr models.Recurrency
-		if err := recurrencyRows.Scan(&rr.RecurrencyID, &rr.RecurrencyName, &rr.RecurrencyPeriod, &rr.CreatedAt); err != nil {
-			log.Println("Error scanning Recurrency:", err)
-			continue
-		}
-		recurrencies = append(recurrencies, rr)
-	}
-
-	// Query Income Type
-	incomeTypeQuery := `SELECT incometypeid, incometypename, incomedescription, entityid, createdat FROM incometype i`
-	incomeTypeRows, err := database.Query(incomeTypeQuery)
-	if err != nil {
-		log.Println("Error fetching Income Type:", err)
-		http.Error(w, "Error fetching Income Type", http.StatusInternalServerError)
-		return
-	}
-	defer incomeTypeRows.Close()
-
-	var incomeType []models.IncomeType
-	for incomeTypeRows.Next() {
-		var it models.IncomeType
-		if err := incomeTypeRows.Scan(&it.IncomeTypeID, &it.IncomeTypeName, &it.IncomeDescription, &it.EntityID, &it.CreatedAt); err != nil {
-			log.Println("Error scanning Income Type:", err)
-			continue
-		}
-		incomeType = append(incomeType, it)
-	}
-
-	// Query User Categories
-	userCategoryQuery := `
-		SELECT UserCategoryID, UserCategoryName, UserProfileID, EntityID, IsActive
-		FROM usercategory WHERE EntityID = 5 AND userprofileid = $1
-	`
-	userCategoryRows, err := database.Query(userCategoryQuery, user.UserProfileID)
-	if err != nil {
-		log.Println("Error fetching User Categories:", err)
-		http.Error(w, "Error fetching User Categories", http.StatusInternalServerError)
-		return
-	}
-	defer userCategoryRows.Close()
-
-	var userCategories []models.UserCategory
-	for userCategoryRows.Next() {
-		var uc models.UserCategory
-		if err := userCategoryRows.Scan(&uc.UserCategoryID, &uc.UserCategoryName, &uc.UserProfileID, &uc.EntityID, &uc.IsActive); err != nil {
-			log.Println("Error scanning User Category:", err)
-			continue
-		}
-		userCategories = append(userCategories, uc)
-	}
-
-	// Query Financial User Items
-	financialUserItemQuery := `
-		SELECT 
-			f.FinancialUserItemID, 
-			f.FinancialUserItemName, 
-			f.EntityID, 
-			f.UserEntityID, 
-			f.RecurrencyID, 
-			f.FinancialUserEntityItemID,
-			f.IsActive, 
-			f.CreatedAt,
-			e.EntityType,
-			r.RecurrencyName,
-			it.IncomeTypeName
-		FROM 
-			financialuseritem f
-		JOIN 
-			Entity e ON f.EntityID = e.EntityID
-		JOIN 
-			Recurrency r ON f.RecurrencyID = r.RecurrencyID 
-		LEFT JOIN 
-			incometype it ON f.UserEntityID = it.incometypeid
-		WHERE 
-			f.UserEntityID = $1 AND e.entityname = 'User' AND f.EntityID = 5
-	`
-
-	// Passing the logged-in user's ID to filter the SQL query
-	financialUserItemRows, err := database.Query(financialUserItemQuery, user.UserProfileID)
-	if err != nil {
-		log.Println("Error fetching Financial User Items:", err)
-		http.Error(w, "Error fetching Financial User Items", http.StatusInternalServerError)
-		return
-	}
-	defer financialUserItemRows.Close()
-
-	var financialUserItems []models.FinancialUserItem
-	for financialUserItemRows.Next() {
-		var fui models.FinancialUserItem
-		if err := financialUserItemRows.Scan(
-			&fui.FinancialUserItemID,
-			&fui.FinancialUserItemName,
-			&fui.EntityID,
-			&fui.UserEntityID,
-			&fui.RecurrencyID,
-			&fui.FinancialUserEntityItemID,
-			&fui.IsActive,
-			&fui.CreatedAt,
-			&fui.EntityType,
-			&fui.RecurrencyName,
-			&fui.IncomeTypeName,
-		); err != nil {
-			log.Println("Error scanning Financial User Item:", err)
-			continue
-		}
-
-		financialUserItems = append(financialUserItems, fui)
-	}
-
-	// Create final response
-	response := struct {
-		Currency           []models.Currency          `json:"currency"`
-		Recurrency         []models.Recurrency        `json:"recurrency"`
-		IncomeType         []models.IncomeType        `json:"income_type"`
-		UserCategories     []models.UserCategory      `json:"user_categories"`
-		FinancialUserItems []models.FinancialUserItem `json:"financial_user_items"`
-	}{
-		Currency:           currency,
-		Recurrency:         recurrencies,
-		IncomeType:         incomeType,
-		UserCategories:     userCategories,
-		FinancialUserItems: financialUserItems,
-	}
-
-	// Set response headers
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	// Convert to JSON and send response
-	json.NewEncoder(w).Encode(response)
-}
-
 func IncomeItem(w http.ResponseWriter, r *http.Request) {
 
 	// Retrieve user from context
@@ -434,54 +255,96 @@ func CreateIncome(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateIncome(w http.ResponseWriter, r *http.Request) {
-	// Ensure the request method is PUT
 	if r.Method != http.MethodPut {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Decode request payload into struct
-	var payload struct {
-		ItemID                int    `json:"FinancialUserItemId"`   // ID of the item to be updated
-		FinancialUserItemName string `json:"FinancialUserItemName"` // Name of the item to be updated
-	}
-
-	// Parse the JSON body into the payload struct
-	err := json.NewDecoder(r.Body).Decode(&payload)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	// Check if the required parameters are present
-	if payload.ItemID == 0 || payload.FinancialUserItemName == "" {
-		http.Error(w, "ItemID and FinancialUserItemName are required", http.StatusBadRequest)
+	// Retrieve user from context
+	user, ok := r.Context().Value("user").(models.UserProfile)
+	if !ok {
+		log.Println("UserDashboard: Unauthorized access - no user found in context.")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
 		return
 	}
 
 	// Get database connection
 	database := db.GetDB()
 
-	// Prepare the SQL update statement
-	query := `UPDATE FinancialUserItem SET FinancialUserItemName = $1 WHERE FinancialUserItemId = $2`
+	// Define a struct to match the incoming JSON payload
+	var payload struct {
+		FinancialUserItemId   int     `json:"FinancialUserItemId"`
+		FinancialUserItemName string  `json:"FinancialUserItemName"`
+		RecurrencyID          string  `json:"RecurrencyID"`
+		CurrencyID            string  `json:"CurrencyID"`
+		Amount                string  `json:"amount"`      // amount is string in payload
+		IncomeValue           *string `json:"IncomeValue"` // nullable
+	}
 
-	// Execute the update statement
-	_, err = database.Exec(query, payload.FinancialUserItemName, payload.ItemID)
+	// Parse the JSON payload
+	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error updating income: %s", err.Error()), http.StatusInternalServerError)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
 
-	// Respond with success message
+	// Basic validation
+	if payload.FinancialUserItemId == 0 || payload.FinancialUserItemName == "" || payload.Amount == "" {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	// Convert amount to float64
+	amountFloat, err := strconv.ParseFloat(payload.Amount, 64)
+	if err != nil {
+		http.Error(w, "Invalid amount format", http.StatusBadRequest)
+		return
+	}
+
+	// Prepare values for stored procedure
+	beginDate := time.Now().Format("2006-01-02")
+	isActive := true
+
+	// Call the stored procedure
+	var message string
+	err = database.QueryRow(
+		"CALL UpdateUserParentIncome($1, $2, $3, $4, $5, $6, $7)",
+		payload.FinancialUserItemId,
+		user.UserProfileID,
+		payload.FinancialUserItemName,
+		amountFloat,
+		beginDate,
+		isActive,
+		message).Scan(&message)
+
+	if err != nil {
+		log.Println("Database error:", err)
+		http.Error(w, "Failed to execute stored procedure", http.StatusInternalServerError)
+		return
+	}
+
+	// Return success message from procedure
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "Income updated successfully"})
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":  "success",
+		"message": message,
+	})
 }
 
 func DeleteIncome(w http.ResponseWriter, r *http.Request) {
 	// Ensure the request method is DELETE
 	if r.Method != http.MethodDelete {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Retrieve user from context
+	user, ok := r.Context().Value("user").(models.UserProfile)
+	if !ok {
+		log.Println("UserDashboard: Unauthorized access - no user found in context.")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
 		return
 	}
 
@@ -500,50 +363,26 @@ func DeleteIncome(w http.ResponseWriter, r *http.Request) {
 	// Get database connection
 	database := db.GetDB()
 
-	// Begin a transaction
-	tx, err := database.Begin()
+	// Call the stored procedure
+	var message string
+	err := database.QueryRow(
+		"CALL DeleteUserParentIncome($1, $2, $3)",
+		payload.ItemID,
+		user.UserProfileID,
+		message).Scan(&message)
+
 	if err != nil {
-		log.Println("Error starting transaction:", err)
-		http.Error(w, "Failed to start transaction", http.StatusInternalServerError)
-		return
-	}
-	defer tx.Rollback() // Ensure rollback on error
-
-	// Delete related records from 'userfinancialactual' table
-	_, err = tx.Exec("DELETE FROM userfinancialactual WHERE FinancialUserItemID = $1", payload.ItemID)
-	if err != nil {
-		log.Println("Error deleting from userfinancialactual:", err)
-		http.Error(w, "Failed to delete related records from userfinancialactual", http.StatusInternalServerError)
+		log.Println("Database error:", err)
+		http.Error(w, "Failed to execute stored procedure", http.StatusInternalServerError)
 		return
 	}
 
-	// Delete related records from 'userfinancialforecast' table
-	_, err = tx.Exec("DELETE FROM userfinancialforecast WHERE FinancialUserItemID = $1", payload.ItemID)
-	if err != nil {
-		log.Println("Error deleting from userfinancialforecast:", err)
-		http.Error(w, "Failed to delete related records from userfinancialforecast", http.StatusInternalServerError)
-		return
-	}
-
-	// Finally, delete the record from 'financialuseritem' table
-	_, err = tx.Exec("DELETE FROM financialuseritem WHERE FinancialUserItemID = $1", payload.ItemID)
-	if err != nil {
-		log.Println("Error deleting from financialuseritem:", err)
-		http.Error(w, "Failed to delete record from financialuseritem", http.StatusInternalServerError)
-		return
-	}
-
-	// Commit the transaction
-	if err := tx.Commit(); err != nil {
-		log.Println("Error committing transaction:", err)
-		http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
-		return
-	}
-
-	// Respond with success message
+	// Return success message from procedure
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "Income deleted successfully"})
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":  "success",
+		"message": message,
+	})
 }
 
 func CreateIncomeCategory(w http.ResponseWriter, r *http.Request) {
@@ -656,4 +495,180 @@ func DeleteIncomeCategory(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "Category deleted successfully"})
+}
+
+func CreateIncomeTax(w http.ResponseWriter, r *http.Request) {
+	log.Println("CreateIncomeTax: Request received")
+
+	// Verifica se o método é POST
+	if r.Method != http.MethodPost {
+		log.Println("CreateIncomeTax: Invalid HTTP method:", r.Method)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Recupera o usuário do contexto
+	user, ok := r.Context().Value("user").(models.UserProfile)
+	if !ok {
+		log.Println("CreateIncomeTax: Unauthorized access - no user found in context.")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		return
+	}
+	log.Println("CreateIncomeTax: User found, ID =", user.UserProfileID)
+
+	// Define estrutura do payload esperado
+	var payload struct {
+		FinancialUserItemName     string `json:"financialUserItemName"`
+		RecurrencyID              string `json:"recurrencyId"`
+		FinancialUserEntityItemID string `json:"financialUserEntityItemId"`
+		ParentFinancialUserItemID string `json:"parentFinancialUserItemId"`
+	}
+
+	// Decodifica o JSON da requisição
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		log.Println("CreateIncomeTax: Error decoding request body:", err)
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+	log.Printf("CreateIncomeTax: Payload decoded: %+v\n", payload)
+
+	// Converte campos numéricos de string para int
+	recurrencyID, err := strconv.Atoi(payload.RecurrencyID)
+	if err != nil {
+		log.Println("CreateIncomeTax: Invalid recurrencyId:", payload.RecurrencyID)
+		http.Error(w, "Invalid recurrencyId", http.StatusBadRequest)
+		return
+	}
+
+	financialUserEntityItemID, err := strconv.Atoi(payload.FinancialUserEntityItemID)
+	if err != nil {
+		log.Println("CreateIncomeTax: Invalid financialUserEntityItemId:", payload.FinancialUserEntityItemID)
+		http.Error(w, "Invalid financialUserEntityItemId", http.StatusBadRequest)
+		return
+	}
+
+	parentFinancialUserItemID, err := strconv.Atoi(payload.ParentFinancialUserItemID)
+	if err != nil {
+		log.Println("CreateIncomeTax: Invalid parentFinancialUserItemId:", payload.ParentFinancialUserItemID)
+		http.Error(w, "Invalid parentFinancialUserItemId", http.StatusBadRequest)
+		return
+	}
+
+	// Conexão com o banco de dados
+	database := db.GetDB()
+
+	// Chama a stored procedure
+	var message string
+	log.Println("CreateIncomeTax: Calling stored procedure CreateUserChildIncomeTax")
+	err = database.QueryRow(
+		"CALL CreateUserChildIncomeTax($1, $2, $3, $4, $5, $6)",
+		user.UserProfileID,
+		payload.FinancialUserItemName,
+		recurrencyID,
+		financialUserEntityItemID,
+		parentFinancialUserItemID,
+		message).Scan(&message)
+
+	if err != nil {
+		log.Println("CreateIncomeTax: Database error:", err)
+		http.Error(w, "Failed to execute stored procedure", http.StatusInternalServerError)
+		return
+	}
+
+	log.Println("CreateIncomeTax: Stored procedure executed successfully. Message:", message)
+
+	// Retorna resposta de sucesso
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":  "success",
+		"message": message,
+	})
+}
+
+// CreateIncomeExpense lida com a criação de uma nova despesa de renda
+func CreateIncomeExpense(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Verifica se o método é POST
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Method Not Allowed"})
+		return
+	}
+
+	// Recupera o usuário do contexto
+	user, ok := r.Context().Value("user").(models.UserProfile)
+	if !ok {
+		log.Println("CreateIncomeExpense: Acesso não autorizado - nenhum usuário encontrado no contexto.")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		return
+	}
+
+	// Estrutura para decodificar o payload JSON
+	var payload struct {
+		FinancialUserItemName     string `json:"financialUserItemName"`
+		RecurrencyID              string `json:"recurrencyId"`
+		FinancialUserEntityItemID string `json:"financialUserEntityItemId"`
+		ParentFinancialUserItemID string `json:"parentFinancialUserItemId"`
+	}
+
+	// Decodifica o corpo da requisição
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		log.Println("CreateIncomeExpense: Erro ao decodificar o corpo da requisição:", err)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request payload"})
+		return
+	}
+
+	// Converte os IDs de string para int
+	recurrencyID, err := strconv.Atoi(payload.RecurrencyID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid recurrencyId"})
+		return
+	}
+
+	financialUserEntityItemID, err := strconv.Atoi(payload.FinancialUserEntityItemID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid financialUserEntityItemId"})
+		return
+	}
+
+	parentFinancialUserItemID, err := strconv.Atoi(payload.ParentFinancialUserItemID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid parentFinancialUserItemId"})
+		return
+	}
+
+	// Conexão com o banco de dados
+	database := db.GetDB()
+
+	// Chama a procedure armazenada
+	var message string
+	err = database.QueryRow(
+		"CALL CreateUserChildIncomeExpense($1, $2, $3, $4, $5, $6)",
+		user.UserProfileID,
+		payload.FinancialUserItemName,
+		recurrencyID,
+		financialUserEntityItemID,
+		parentFinancialUserItemID,
+		&message,
+	).Scan(&message)
+
+	if err != nil {
+		log.Println("CreateIncomeExpense: Erro no banco de dados:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to execute stored procedure"})
+		return
+	}
+
+	// Responde com sucesso
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":  "success",
+		"message": message,
+	})
 }

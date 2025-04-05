@@ -8,5 +8,5 @@ func Home(w http.ResponseWriter, r *http.Request) {
 
 	data := map[string]interface{}{}
 
-	RenderTemplate(w, r, "home.html", data)	
+	RenderTemplate(w, r, "home.html", data)
 }

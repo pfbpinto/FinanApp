@@ -133,46 +133,45 @@ const UserIncome = () => {
 
   // Income Create and Update handle
   const handleIncomeSubmit = (data) => {
-    // Determine the HTTP method (POST for new asset, PUT for updating an existing one)
     const method = currentIncome ? "PUT" : "POST";
-    // Set the URL for the API request (use asset ID for updating)
     const url = currentIncome
       ? `/api/income-update/${data.FinancialUserItemId}`
       : "/api/income";
 
-    // Insert new parameters to the object
-    const dataToSend = currentIncome
-      ? { ...data, IncomeValue: parseFloat(data.IncomeValue) }
-      : { ...data };
+    // 👇 Corrigir ID vazio para null (importante para evitar erro no backend)
+    const cleanData = {
+      ...data,
+      FinancialUserItemId:
+        data.FinancialUserItemId === "" ? null : data.FinancialUserItemId,
+    };
 
-    // Send the data to the server
+    // 👇 Adicionar o IncomeValue só no update
+    const dataToSend = currentIncome
+      ? { ...cleanData, IncomeValue: parseFloat(cleanData.IncomeValue) }
+      : cleanData;
+
     fetch(url, {
       method: method,
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(dataToSend),
-      credentials: "include", // Include credentials like cookies for authentication
+      credentials: "include",
     })
       .then((response) => {
-        // Check if the response status is ok (status code 200-299)
         if (!response.ok) {
-          // If response is not ok, extract error message from the JSON response
           return response.json().then((errorData) => {
             return Promise.reject(errorData);
           });
         }
-        // If successful, return the response as JSON
         return response.json();
       })
       .then(() => {
-        // Show a success message based on whether it's a new asset or an update
         toastr.success(currentIncome ? "Income updated!" : "Income created!");
-        setIsModalIncomeOpen(false); // Close the modal
-        fetchUserIncome(); // Refresh the user dashboard data
+        setIsModalIncomeOpen(false);
+        fetchUserIncome();
       })
       .catch((error) => {
-        // Log any error during the save process
         console.error("Error saving income:", error);
         toastr.error(`Error: ${error.message}`);
       });
