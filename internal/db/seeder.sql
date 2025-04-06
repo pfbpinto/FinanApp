@@ -144,19 +144,19 @@ INSERT INTO  FinancialUserItem (FinancialUserItemName, EntityID,UserEntityID, Re
 --Forecast Seeder
 INSERT INTO UserFinancialForecast (UserCategoryID, FinancialUserItemID, UserFinancialForecastAmount,UserFinancialForecastBeginDate, UserFinancialForecastEndDate, CurrencyID) 
 VALUES 
-(1, 1,8500, '2025-02-01', NULL, 1),
-(2, 2,3500, '2025-03-05', '2025-01-05', 1),
-(3, 3,250, '2025-03-01', NULL, 1),
-(4, 4,50, '2025-03-01', NULL, 1),
-(5, 5,1850, '2025-03-30', NULL, 1),
-(6, 6,1120, '2025-03-15', NULL, 1),
-(7, 7,1900, '2025-03-10', NULL, 1),
-(1, 1,8500, '2025-04-01', NULL, 1),
-(3, 3,250, '2025-04-01', NULL, 1),
-(4, 4,50, '2025-04-01', NULL, 1),
-(5, 5,1850, '2025-04-30', NULL, 1),
-(6, 6,1120, '2025-04-15', NULL, 1),
-(7, 7,1900, '2025-04-10', NULL, 1);
+(1, 1, 8500, '2025-02-01', NULL, 1),
+(2, 2, 3500, '2025-03-05', '2025-05-05', 1),
+(3, 3, 250, '2025-03-01', NULL, 1),
+(4, 4, 50, '2025-03-01', NULL, 1),
+(5, 5, 1850, '2025-03-30', NULL, 1),
+(6, 6, 1120, '2025-03-15', NULL, 1),
+(7, 7, 1900, '2025-03-10', NULL, 1),
+(1, 1, 8500, '2025-04-01', NULL, 1),
+(3, 3, 250, '2025-04-01', NULL, 1),
+(4, 4, 50, '2025-04-01', NULL, 1),
+(5, 5, 1850, '2025-04-30', NULL, 1),
+(6, 6, 1120, '2025-04-15', NULL, 1),
+(7, 7, 1900, '2025-04-10', NULL, 1);
 
 INSERT INTO UserFinancialActual (UserCategoryID, FinancialUserItemID,UserFinancialActualAmount,UserFinancialActualtBeginDate, UserFinancialActualEndDate, CurrencyID, Note) VALUES 
 (1, 1, 8500 , '2025-01-01' , NULL		  , 1,NULL),
