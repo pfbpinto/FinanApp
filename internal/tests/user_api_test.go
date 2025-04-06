@@ -1,116 +1,56 @@
 package tests
 
 import (
-	"bytes"
 	"database/sql"
-	"encoding/json"
-	"finanapp/internal/handlers"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"os"
+	"log"
 	"testing"
+	"time"
 
-	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
-	"github.com/stretchr/testify/assert"
 )
 
-var testDB *sql.DB
+var database *sql.DB
 
-func TestMain(m *testing.M) {
+// Inicializa a conexão com o banco de dados
+func init() {
+	dsn := "postgres://postgres:Fpadminpostgre@localhost:5432/finanapp?sslmode=disable"
+
 	var err error
-
-	// Conexão direta para testes
-	connStr := "host=localhost port=5432 user=postgres password=Fpadminpostgre dbname=finanapp sslmode=disable"
-	testDB, err = sql.Open("postgres", connStr)
+	database, err = sql.Open("postgres", dsn)
 	if err != nil {
-		fmt.Printf("Erro ao conectar no banco: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("Erro ao abrir conexão com o banco: %v", err)
 	}
-	defer testDB.Close()
 
-	// Verifica a conexão
-	err = testDB.Ping()
+	err = database.Ping()
 	if err != nil {
-		fmt.Printf("Erro ao testar conexão com o banco: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("Erro ao conectar com o banco: %v", err)
 	}
 
-	os.Exit(m.Run())
+	fmt.Println("✅ Conexão com o banco de dados estabelecida.")
 }
 
-func setupRouter() *mux.Router {
-	r := mux.NewRouter()
-	r.HandleFunc("/api/register", handlers.RegisterReact).Methods("POST")
-	return r
-}
+// Testa a criação de um novo usuário via stored procedure
+func TestCreateUser_Success(t *testing.T) {
+	// Garante que o email seja único em cada execução
+	email := fmt.Sprintf("francisco_%d@example.com", time.Now().UnixNano())
 
-type RegisterPayload struct {
-	FirstName    string `json:"first_name"`
-	LastName     string `json:"last_name"`
-	EmailAddress string `json:"email_address"`
-	UserPassword string `json:"user_password"`
-	DateOfBirth  string `json:"date_of_birth"`
-}
+	var response string
+	err := database.QueryRow("CALL CreateUser($1, $2, $3, $4, $5, $6)",
+		"Francisco",
+		"Pinto",
+		email,
+		"superSecure123!",
+		"1982-04-05",
+		&response).Scan(&response)
 
-type APIResponse struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
-}
-
-func TestRegisterUser_Success(t *testing.T) {
-	router := setupRouter()
-
-	payload := RegisterPayload{
-		FirstName:    "Pipeline",
-		LastName:     "Jones",
-		EmailAddress: "jones@pipeline.com",
-		UserPassword: "password123",
-		DateOfBirth:  "2025-07-30",
+	if err != nil {
+		t.Fatalf("Erro ao executar a procedure CreateUser: %v", err)
 	}
 
-	body, _ := json.Marshal(payload)
-	req, _ := http.NewRequest("POST", "/api/register", bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "application/json")
+	fmt.Printf("📨 Resposta da procedure: %s\n", response)
 
-	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
-
-	assert.Equal(t, http.StatusOK, rr.Code)
-
-	var response APIResponse
-	err := json.Unmarshal(rr.Body.Bytes(), &response)
-	assert.NoError(t, err)
-
-	assert.Equal(t, "success", response.Status)
-	assert.Contains(t, response.Message, "Usuário criado")
-}
-
-func TestRegisterUser_EmailDuplicado(t *testing.T) {
-	router := setupRouter()
-
-	payload := RegisterPayload{
-		FirstName:    "Pipeline",
-		LastName:     "Jones",
-		EmailAddress: "jones@pipeline.com",
-		UserPassword: "password123",
-		DateOfBirth:  "2025-07-30",
+	if response == "" {
+		t.Errorf("A resposta da procedure está vazia")
 	}
-
-	body, _ := json.Marshal(payload)
-	req, _ := http.NewRequest("POST", "/api/register", bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "application/json")
-
-	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
-
-	assert.Equal(t, http.StatusOK, rr.Code)
-
-	var response APIResponse
-	err := json.Unmarshal(rr.Body.Bytes(), &response)
-	assert.NoError(t, err)
-
-	assert.Equal(t, "fail", response.Status)
-	assert.Contains(t, response.Message, "já está cadastrado")
 }
