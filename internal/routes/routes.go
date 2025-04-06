@@ -13,6 +13,7 @@ func RegisterRoutes(mux *http.ServeMux, corsMiddleware *cors.Cors) {
 	RegisterUserRoutes(mux, corsMiddleware)
 	RegisterIncomeRoutes(mux, corsMiddleware)
 	RegisterAssetRoutes(mux, corsMiddleware)
+	RegisterExpenseRoutes(mux, corsMiddleware)
 
 	// Static
 	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
