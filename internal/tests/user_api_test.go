@@ -3,14 +3,23 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
+	"finanapp/internal/db"
 	"finanapp/internal/handlers"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
+
+// TestMain inicializa o banco de dados antes de rodar os testes
+func TestMain(m *testing.M) {
+	db.InitDB() // Inicializa a conexão com o banco de dados
+	code := m.Run()
+	os.Exit(code)
+}
 
 // inicializa o router com a rota da API
 func setupRouter() *mux.Router {
@@ -19,7 +28,7 @@ func setupRouter() *mux.Router {
 	return r
 }
 
-// exemplo de payload que enviaremos à API
+// payload enviado para a API
 type RegisterPayload struct {
 	FirstName    string `json:"first_name"`
 	LastName     string `json:"last_name"`
@@ -28,7 +37,7 @@ type RegisterPayload struct {
 	DateOfBirth  string `json:"date_of_birth"`
 }
 
-// resposta esperada da API (que vem do p_Message da procedure)
+// resposta esperada da API
 type APIResponse struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
