@@ -1,28 +1,11 @@
 package tests
 
 import (
-	"database/sql"
 	"fmt"
-	"log"
 	"testing"
 
 	_ "github.com/lib/pq"
 )
-
-// Função para estabelecer a conexão com o banco
-func setupDB(t *testing.T) *sql.DB {
-	// Configuração da conexão
-	dsn := "postgres://postgres:Fpadminpostgre@localhost:5432/finanapp?sslmode=disable"
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		t.Fatalf("Erro ao abrir conexão com o banco: %v", err)
-	}
-	if err = db.Ping(); err != nil {
-		t.Fatalf("Erro ao conectar com o banco de dados: %v", err)
-	}
-	log.Println("✅ Conexão com o banco de dados estabelecida.")
-	return db
-}
 
 // Teste para a procedure CreateUserParentIncome
 func TestCreateUserParentIncome_Success(t *testing.T) {
@@ -34,7 +17,7 @@ func TestCreateUserParentIncome_Success(t *testing.T) {
 
 	// Chamada da procedure
 	err := db.QueryRow("CALL CreateUserParentIncome($1, $2, $3, $4, $5, $6, $7)",
-		2,                // p_UserID
+		1,                // p_UserID
 		"Salário Mensal", // p_FinancialUserItemName
 		1,                // p_RecurrencyID (ex: mensal)
 		5,                // p_FinancialUserEntityItemID (ex: Income)
@@ -61,7 +44,7 @@ func TestUpdateUserParentIncome_Success(t *testing.T) {
 	// Chamada da procedure UpdateUserParentIncome
 	err := db.QueryRow("CALL UpdateUserParentIncome($1, $2, $3, $4, $5, $6, $7)",
 		1,                    // p_FinancialUserItemID
-		2,                    // p_UserID (ID do usuário criado no teste anterior)
+		1,                    // p_UserID (ID do usuário criado no teste anterior)
 		"Salário Atualizado", // p_NewFinancialUserItemName
 		20000.00,             // p_NewParentIncomeAmount
 		"2025-05-01",         // p_NewBeginDate
@@ -86,7 +69,7 @@ func TestCreateUserChildIncomeTax_Success(t *testing.T) {
 
 	// Chamada da procedure CreateUserChildIncomeTax
 	err := db.QueryRow("CALL CreateUserChildIncomeTax($1, $2, $3, $4, $5, $6)",
-		2,                  // p_UserID
+		1,                  // p_UserID
 		"Imposto de Renda", // p_FinancialUserItemName
 		1,                  // p_RecurrencyID (ex: mensal)
 		7,                  // p_FinancialUserEntityItemID (ex: Income Tax)

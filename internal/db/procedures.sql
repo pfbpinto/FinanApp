@@ -429,6 +429,9 @@ BEGIN
 
     DELETE FROM UserFinancialActual WHERE FinancialUserItemID = p_FinancialUserItemID;
 
+    -- Remove o FinancialUserItem Child
+    DELETE FROM FinancialUserItem WHERE parentfinancialuseritemid = p_FinancialUserItemID;
+
     -- Remove o FinancialUserItem
     DELETE FROM FinancialUserItem WHERE FinancialUserItemID = p_FinancialUserItemID;
 
