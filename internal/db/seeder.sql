@@ -83,7 +83,7 @@ INSERT INTO Recurrency (RecurrencyName, RecurrencyPeriod) VALUES
 /*1*/('One Time', 'today'),
 /*2*/('Monthly', '1 month'),
 /*3*/('Quarterly','4 months'),
-/*4*/('Yearly', '1 year')
+/*4*/('Yearly', '1 year'),
 /*5*/('Variable','undefined');
 /*-- ATUALIZANDO A TABELA RECURRENCY PRA FUTURAMENTE UPGRADE A PROCEDURE PARA UTILIZAR O PERIDO DIRETAMENTE DA TABELA COMO EXEMPLO ABAIXO:
       -- Configura número de inserções e intervalo conforme a recorrência
