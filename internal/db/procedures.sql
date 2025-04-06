@@ -1018,7 +1018,7 @@ STORED PROCEDURE DESCRIPTION:
    Criar um Expense associado a user asset income existente. A procuedure irá criar um novo record na table FinancialuserItem e replicar (baseado no income existent), todos os records, associado o novo expense com as mesma datas.
 STORED PROCEDURE TEST CASE(S):
 
-CALL CreateUserAssetChildIncomeTax(1, 2,'New Child Tax IRPJ',3,60,950,'');
+CALL CreateUserAssetChildIncomeExpense(1, 2,'New Child Tax IRPJ',3,60,950,'');
 
 BACKEND VISUALIZATION:
   
@@ -1065,8 +1065,8 @@ BEGIN
     --Replicando mesma recorrencia do Parent Income
     SELECT recurrencyid  
     INTO v_ParentRecurrency
-    FROM FinancialUserItemName
-    WHERE FinancialUserItem = p_ParentFinancialUserItemID;
+    FROM FinancialUserItem
+    WHERE FinancialUserItemID = p_ParentFinancialUserItemID;
     INSERT INTO FinancialUserItem (
         FinancialUserItemName, EntityID, UserEntityID, RecurrencyID, FinancialUserEntityItemID, ParentFinancialUserItemID
     ) 
