@@ -2,33 +2,50 @@ package tests
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
-	"finanapp/internal/db"
 	"finanapp/internal/handlers"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
 	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
 
-// TestMain inicializa o banco de dados antes de rodar os testes
+var testDB *sql.DB
+
 func TestMain(m *testing.M) {
-	db.InitDB() // Inicializa a conexão com o banco de dados
-	code := m.Run()
-	os.Exit(code)
+	var err error
+
+	// Conexão direta para testes
+	connStr := "host=localhost port=5432 user=postgres password=Fpadminpostgre dbname=finanapp sslmode=disable"
+	testDB, err = sql.Open("postgres", connStr)
+	if err != nil {
+		fmt.Printf("Erro ao conectar no banco: %v\n", err)
+		os.Exit(1)
+	}
+	defer testDB.Close()
+
+	// Verifica a conexão
+	err = testDB.Ping()
+	if err != nil {
+		fmt.Printf("Erro ao testar conexão com o banco: %v\n", err)
+		os.Exit(1)
+	}
+
+	os.Exit(m.Run())
 }
 
-// inicializa o router com a rota da API
 func setupRouter() *mux.Router {
 	r := mux.NewRouter()
 	r.HandleFunc("/api/register", handlers.RegisterReact).Methods("POST")
 	return r
 }
 
-// payload enviado para a API
 type RegisterPayload struct {
 	FirstName    string `json:"first_name"`
 	LastName     string `json:"last_name"`
@@ -37,7 +54,6 @@ type RegisterPayload struct {
 	DateOfBirth  string `json:"date_of_birth"`
 }
 
-// resposta esperada da API
 type APIResponse struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
@@ -77,7 +93,7 @@ func TestRegisterUser_EmailDuplicado(t *testing.T) {
 	payload := RegisterPayload{
 		FirstName:    "Pipeline",
 		LastName:     "Jones",
-		EmailAddress: "jones@pipeline.com", // mesmo e-mail do teste anterior
+		EmailAddress: "jones@pipeline.com",
 		UserPassword: "password123",
 		DateOfBirth:  "2025-07-30",
 	}
