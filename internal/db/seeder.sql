@@ -115,11 +115,6 @@ VALUES
 ('Pedro', 'Pinto', '1985-07-30', '$2a$10$"$2a$10$gFxlAuEUcogaJS4R8jiOiudfVjM3q0H.w9GsLvHPuoIcqKtoH2vE6', 'pfbpinto@hotmail.com', '0');
 
 
---User AssetSeeder
-INSERT INTO UserAsset (AssetTypeID, UserProfileID, UserAssetName, UserAssetValueAmount, UserAssetAcquisitionBeginDate, UserAssetAcquisitionEndDate, IsActive) VALUES 
-(1, 1, 'Apartamento Onix', 100000.00, '2020-01-01', NULL, TRUE);
-
-
 --User Category Seeder
 INSERT INTO UserCategory (UserCategoryName, UserProfileID, EntityID, IsActive) VALUES 
 /*1*/('Recebimentos', 1, 5,true),
@@ -129,50 +124,3 @@ INSERT INTO UserCategory (UserCategoryName, UserProfileID, EntityID, IsActive) V
 /*5*/('Impostos Imobiliarios', 1,12,true),
 /*6*/('Financiamentos', 1, 13,true),
 /*7*/('Fontes de Renda Imobiliaria', 1, 11,true);
-
-
--- FinancialUserItemName Seeder
-INSERT INTO  FinancialUserItem (FinancialUserItemName, EntityID,UserEntityID, RecurrencyID, FinancialUserEntityItemID,ParentFinancialUserItemID,IsActive) VALUES 
-/*1*/('Salario Exterior', 5,1,1,2,NULL,TRUE),
-/*2*/('Novo Laptop', 6,1,1,1,NULL,TRUE),
-/*3*/('Imposto de Renda Salario', 7,1,1,2,1,TRUE),
-/*4*/('Cambio do Salario', 8,1,2,6,1,TRUE),
-/*5*/('IPTU Apartamento Onix',10,1,4,12,NULL,TRUE),
-/*6*/('Financiamento Apartamento Onix',10,1,2,2,NULL,TRUE),
-/*7*/('Aluguel Apartamento Onix',11,1,2, 2,NULL,TRUE);
-
---Forecast Seeder
-INSERT INTO UserFinancialForecast (UserCategoryID, FinancialUserItemID, UserFinancialForecastAmount,UserFinancialForecastBeginDate, UserFinancialForecastEndDate, CurrencyID) 
-VALUES 
-(1, 1, 8500, '2025-02-01', NULL, 1),
-(2, 2, 3500, '2025-03-05', '2025-05-05', 1),
-(3, 3, 250, '2025-03-01', NULL, 1),
-(4, 4, 50, '2025-03-01', NULL, 1),
-(5, 5, 1850, '2025-03-30', NULL, 1),
-(6, 6, 1120, '2025-03-15', NULL, 1),
-(7, 7, 1900, '2025-03-10', NULL, 1),
-(1, 1, 8500, '2025-04-01', NULL, 1),
-(3, 3, 250, '2025-04-01', NULL, 1),
-(4, 4, 50, '2025-04-01', NULL, 1),
-(5, 5, 1850, '2025-04-30', NULL, 1),
-(6, 6, 1120, '2025-04-15', NULL, 1),
-(7, 7, 1900, '2025-04-10', NULL, 1);
-
-INSERT INTO UserFinancialActual (UserCategoryID, FinancialUserItemID,UserFinancialActualAmount,UserFinancialActualtBeginDate, UserFinancialActualEndDate, CurrencyID, Note) VALUES 
-(1, 1, 8500 , '2025-01-01' , NULL		  , 1,NULL),
-(2, 2, 3500 , '2025-01-05' , '2025-01-05', 1,NULL),
-(3, 3, 234  , '2025-01-01' , NULL		  , 1,NULL),
-(4, 4, 80   , '2025-01-01' , NULL		  , 1,'Dolar em alta'),
-(5, 5, 1450 , '2025-01-30' , NULL		  , 1,'Desconto por Antecipação'),
-(6, 6, 1120 , '2025-01-15' , NULL	      , 1,NULL),
-(7, 7, 2100 , '2025-01-20' , NULL        , 1,'Atraso de Pagamento Inquilino');
-
-INSERT INTO UserForecastActualRelation (UserFinancialActualID, UserFinancialForecastID) 
-VALUES 
-(1, 1),
-(2, 2),
-(3, 3),
-(4, 4),
-(5, 5),
-(6, 6),
-(7, 7);
