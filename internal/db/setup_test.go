@@ -18,9 +18,9 @@ func TestRunDatabaseSQL(t *testing.T) {
 	defer db.Close()
 
 	files := []string{
-		"internal/db/database.sql",
-		"internal/db/procedures.sql",
-		"internal/db/seeder.sql",
+		"database.sql",
+		"procedures.sql",
+		"seeder.sql",
 	}
 
 	for _, file := range files {
